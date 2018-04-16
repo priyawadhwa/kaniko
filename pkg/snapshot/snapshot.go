@@ -88,16 +88,19 @@ func (s *Snapshotter) TakeSnapshotOfFiles(files []string) ([]byte, error) {
 			return nil, err
 		}
 		if util.PathInWhitelist(file, s.directory) {
+			logrus.Info("Not adding %s", file)
 			logrus.Debugf("Not adding %s to layer, as it is whitelisted", file)
 			continue
 		}
 		// Only add to the tar if we add it to the layeredmap.
 		maybeAdd, err := s.l.MaybeAdd(file)
+		logrus.Infof("maybeadd is %s", maybeAdd)
 		if err != nil {
 			return nil, err
 		}
 		if maybeAdd {
 			filesAdded = true
+			logrus.Infof("Added %s", file)
 			util.AddToTar(file, info, w)
 		}
 	}

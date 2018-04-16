@@ -19,7 +19,7 @@ steps:
     dir: go/src/github.com/GoogleCloudPlatform/kaniko
     env: ["GOPATH=/workspace/go/"]
   # Then, build kaniko with kaniko
-  - name: "gcr.io/kaniko-project/executor:latest"
+  - name: "gcr.io/priya-wadhwa/executor:latest"
     args: ["--dockerfile=/workspace/deploy/Dockerfile",
            "--context=/workspace/go/src/github.com/GoogleCloudPlatform/kaniko/",
-           "--destination=gcr.io/kaniko-project/executor:${COMMIT_SHA}"]
+           "--destination=gcr.io/priya-wadhwa/executor:${COMMIT_SHA}"]
