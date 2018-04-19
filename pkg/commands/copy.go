@@ -17,8 +17,6 @@ limitations under the License.
 package commands
 
 import (
-	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,42 +40,17 @@ func (c *CopyCommand) ExecuteCommand(config *manifest.Schema2Config) error {
 	logrus.Infof("cmd: copy %s", srcs)
 	logrus.Infof("dest: %s", dest)
 
-	logrus.Info(c.buildcontext)
-
-	files, err := ioutil.ReadDir("./")
-	if err != nil {
-		return err
-	}
-	fmt.Println("Reading dir")
-	for _, f := range files {
-		fmt.Println(f.Name())
-	}
-	files, err = ioutil.ReadDir("/kaniko/buildcontext")
-	if err != nil {
-		return err
-	}
-	fmt.Println("Reading dir absolute")
-	for _, f := range files {
-		fmt.Println(f.Name())
-	}
-	files, err = ioutil.ReadDir("./kaniko")
-	if err != nil {
-		return err
-	}
-	fmt.Println("Reading dir nota bsolute")
-	for _, f := range files {
-		fmt.Println(f.Name())
-	}
-
 	// First, resolve any environment replacement
 	resolvedEnvs, err := util.ResolveEnvironmentReplacementList(c.cmd.SourcesAndDest, config.Env, true)
 	if err != nil {
+		logrus.Info("Error resolving envs")
 		return err
 	}
 	dest = resolvedEnvs[len(resolvedEnvs)-1]
 	// Get a map of [src]:[files rooted at src]
 	srcMap, err := util.ResolveSources(resolvedEnvs, c.buildcontext)
 	if err != nil {
+		logrus.Info("Error resovling srcs")
 		return err
 	}
 	// For each source, iterate through each file within and copy it over
@@ -85,10 +58,12 @@ func (c *CopyCommand) ExecuteCommand(config *manifest.Schema2Config) error {
 		for _, file := range files {
 			fi, err := os.Lstat(filepath.Join(c.buildcontext, file))
 			if err != nil {
+				logrus.Infof("Error getting file %s", filepath.Join(c.buildcontext, file))
 				return err
 			}
 			destPath, err := util.DestinationFilepath(file, src, dest, config.WorkingDir, c.buildcontext)
 			if err != nil {
+				logrus.Info("Error getting destpath")
 				return err
 			}
 			// If source file is a directory, we want to create a directory ...

@@ -48,7 +48,7 @@ const (
 	NoBaseImage = "scratch"
 
 	// Constants for shared /kaniko-build/ volume
-	KanikoBuildDir  = "/kaniko-build/"
+	KanikoBuildDir  = "/kaniko-build"
 	KanikoBuildRoot = "/kaniko-build/root"
 )
 

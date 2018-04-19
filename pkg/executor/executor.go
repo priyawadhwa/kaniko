@@ -18,6 +18,7 @@ package executor
 
 import (
 	"fmt"
+	img "github.com/GoogleContainerTools/container-diff/pkg/image"
 	"github.com/GoogleContainerTools/kaniko/pkg/commands"
 	"github.com/GoogleContainerTools/kaniko/pkg/constants"
 	"github.com/GoogleContainerTools/kaniko/pkg/dockerfile"
@@ -30,13 +31,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"syscall"
+
 	"path/filepath"
 )
 
-func SetUpKanikoBuildVolume(dockerfilePath, srcContext string) error {
+func SetupBuild(dockerfilePath, srcContext string) error {
 	// Copy over source context
 	logrus.Infof("Copying build context from %s to %s", srcContext, filepath.Join(constants.KanikoBuildRoot, srcContext))
 	if err := util.CopyDir(srcContext, filepath.Join(constants.KanikoBuildRoot, srcContext)); err != nil {
+		return err
+	}
+	if err := util.CopyDir("/dev/null", filepath.Join(constants.KanikoBuildRoot, "/dev/null")); err != nil {
 		return err
 	}
 	// Then, extract the image
@@ -51,68 +57,71 @@ func SetUpKanikoBuildVolume(dockerfilePath, srcContext string) error {
 	}
 	baseImage := stages[0].BaseName
 	logrus.Infof("Unpacking filesystem of %s to %s...", baseImage, constants.KanikoBuildRoot)
-	return util.ExtractFileSystemFromImage(baseImage, constants.KanikoBuildRoot)
-
+	if err := util.ExtractFileSystemFromImage(baseImage, constants.KanikoBuildRoot); err != nil {
+		return err
+	}
+	// Set the chroot
+	if err := os.Chdir(constants.KanikoBuildRoot); err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+	logrus.Info("Setting chroot potentially????")
+	return syscall.Chroot(constants.KanikoBuildRoot)
 }
 
-func DoBuild(dockerfilePath, srcContext, snapshotMode string) error {
+func DoBuild(dockerfilePath, srcContext, snapshotMode string) (*img.MutableSource, error) {
 	// Parse dockerfile and unpack base image to root
 	d, err := ioutil.ReadFile(dockerfilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	stages, err := dockerfile.Parse(d)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	baseImage := stages[0].BaseName
 
 	hasher, err := getHasher(snapshotMode)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	l := snapshot.NewLayeredMap(hasher)
 	snapshotter := snapshot.NewSnapshotter(l, constants.RootDir)
 
 	// Take initial snapshot
 	if err := snapshotter.Init(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Initialize source image
 	sourceImage, err := image.NewSourceImage(baseImage)
 	if err != nil {
-		return err
-	}
-
-	// Set environment variables within the image
-	if err := image.SetEnvVariables(sourceImage); err != nil {
-		return err
+		return nil, err
 	}
 
 	imageConfig := sourceImage.Config()
 	// Currently only supports single stage builds
 	for _, stage := range stages {
 		if err := resolveOnBuild(&stage, imageConfig); err != nil {
-			return err
+			return nil, err
 		}
 		for _, cmd := range stage.Commands {
 			dockerCommand, err := commands.GetCommand(cmd, srcContext)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if dockerCommand == nil {
 				continue
 			}
 			if err := dockerCommand.ExecuteCommand(imageConfig); err != nil {
-				return err
+				return nil, err
 			}
 			// Now, we get the files to snapshot from this command and take the snapshot
 			snapshotFiles := dockerCommand.FilesToSnapshot()
 			contents, err := snapshotter.TakeSnapshot(snapshotFiles)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			util.MoveVolumeWhitelistToWhitelist()
 			if contents == nil {
@@ -122,87 +131,11 @@ func DoBuild(dockerfilePath, srcContext, snapshotMode string) error {
 			}
 			// Append the layer to the image
 			if err := sourceImage.AppendLayer(contents, constants.Author); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
-	return nil
-}
-
-func DoStandardBuild(dockerfilePath, srcContext, destination, snapshotMode string) error {
-	// Parse dockerfile and unpack base image to root
-	d, err := ioutil.ReadFile(dockerfilePath)
-	if err != nil {
-		return err
-	}
-
-	stages, err := dockerfile.Parse(d)
-	if err != nil {
-		return err
-	}
-	baseImage := stages[0].BaseName
-
-	// Unpack file system to root
-	logrus.Infof("Unpacking filesystem of %s...", baseImage)
-	if err := util.ExtractFileSystemFromImage(baseImage, constants.RootDir); err != nil {
-		return err
-	}
-
-	hasher, err := getHasher(snapshotMode)
-	if err != nil {
-		return err
-	}
-	l := snapshot.NewLayeredMap(hasher)
-	snapshotter := snapshot.NewSnapshotter(l, constants.RootDir)
-
-	// Take initial snapshot
-	if err := snapshotter.Init(); err != nil {
-		return err
-	}
-
-	// Initialize source image
-	sourceImage, err := image.NewSourceImage(baseImage)
-	if err != nil {
-		return err
-	}
-
-	imageConfig := sourceImage.Config()
-	// Currently only supports single stage builds
-	for _, stage := range stages {
-		if err := resolveOnBuild(&stage, imageConfig); err != nil {
-			return err
-		}
-		for _, cmd := range stage.Commands {
-			dockerCommand, err := commands.GetCommand(cmd, srcContext)
-			if err != nil {
-				return err
-			}
-			if err := dockerCommand.ExecuteCommand(imageConfig); err != nil {
-				return err
-			}
-			// Now, we get the files to snapshot from this command and take the snapshot
-			snapshotFiles := dockerCommand.FilesToSnapshot()
-			contents, err := snapshotter.TakeSnapshot(snapshotFiles)
-			if err != nil {
-				return err
-			}
-			util.MoveVolumeWhitelistToWhitelist()
-			if contents == nil {
-				logrus.Info("No files were changed, appending empty layer to config.")
-				sourceImage.AppendConfigHistory(constants.Author, true)
-				continue
-			}
-			// Append the layer to the image
-			if err := sourceImage.AppendLayer(contents, constants.Author); err != nil {
-				return err
-			}
-		}
-	}
-	// Push the image
-	if err := setDefaultEnv(); err != nil {
-		return err
-	}
-	return image.PushImage(sourceImage, destination)
+	return sourceImage, nil
 }
 
 func getHasher(snapshotMode string) (func(string) (string, error), error) {

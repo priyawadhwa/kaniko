@@ -18,15 +18,15 @@ package cmd
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
-
 	"github.com/GoogleContainerTools/kaniko/pkg/constants"
 	"github.com/GoogleContainerTools/kaniko/pkg/executor"
+	"github.com/GoogleContainerTools/kaniko/pkg/image"
 	"github.com/GoogleContainerTools/kaniko/pkg/util"
 	"github.com/genuinetools/amicontained/container"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
 	"syscall"
 )
 
@@ -38,7 +38,6 @@ var (
 	bucket         string
 	logLevel       string
 	force          bool
-	pull           bool
 )
 
 func init() {
@@ -49,7 +48,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&snapshotMode, "snapshotMode", "", "full", "Set this flag to change the file attributes inspected during snapshotting")
 	RootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", constants.DefaultLogLevel, "Log level (debug, info, warn, error, fatal, panic")
 	RootCmd.PersistentFlags().BoolVarP(&force, "force", "", false, "Force building outside of a container")
-	RootCmd.PersistentFlags().BoolVarP(&pull, "pull", "", false, "Force building outside of a container")
 }
 
 var RootCmd = &cobra.Command{
@@ -71,29 +69,30 @@ var RootCmd = &cobra.Command{
 			}
 			logrus.Warn("kaniko is being run outside of a container. This can have dangerous effects on your system")
 		}
-		if pull {
-			if err := executor.SetUpKanikoBuildVolume(dockerfilePath, srcContext); err != nil {
-				logrus.Error(err)
-				os.Exit(1)
-			}
-			logrus.Info(util.Files("/kaniko-build/root/"))
-			// Set the chroot
-			if err := os.Chdir(constants.KanikoBuildRoot); err != nil {
-				logrus.Error(err)
-				os.Exit(1)
-			}
-			logrus.Info("Setting chroot potentially????")
-			if err := syscall.Chroot(constants.KanikoBuildRoot); err != nil {
-				logrus.Error(err)
-				os.Exit(1)
-			}
-			if err := executor.DoBuild(dockerfilePath, srcContext, snapshotMode); err != nil {
-				logrus.Error(err)
-				os.Exit(1)
-			}
-			return
+		root, err := os.Open(constants.RootDir)
+		defer root.Close()
+		if err != nil {
+			logrus.Error(err)
+			os.Exit(1)
 		}
-		if err := executor.DoStandardBuild(dockerfilePath, srcContext, destination, snapshotMode); err != nil {
+		if err := executor.SetupBuild(dockerfilePath, srcContext); err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+		builtImage, err := executor.DoBuild(dockerfilePath, srcContext, snapshotMode)
+		if err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+		if err := root.Chdir(); err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+		if err := syscall.Chroot("."); err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+		if err := image.PushImage(builtImage, destination); err != nil {
 			logrus.Error(err)
 			os.Exit(1)
 		}

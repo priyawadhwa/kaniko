@@ -88,7 +88,8 @@ func ResolveSources(srcsAndDest instructions.SourcesAndDest, root string) (map[s
 	srcs := srcsAndDest[:len(srcsAndDest)-1]
 	// If sources contain wildcards, we first need to resolve them to actual paths
 	if ContainsWildcards(srcs) {
-		logrus.Debugf("Resolving srcs %v...", srcs)
+		logrus.Infof("Resolving srcs %v...", srcs)
+
 		files, err := RelativeFiles("", root)
 		if err != nil {
 			return nil, err
@@ -97,7 +98,7 @@ func ResolveSources(srcsAndDest instructions.SourcesAndDest, root string) (map[s
 		if err != nil {
 			return nil, err
 		}
-		logrus.Debugf("Resolved sources to %v", srcs)
+		logrus.Infof("Resolved sources to %v", srcs)
 	}
 	// Now, get a map of [src]:[files rooted at src]
 	srcMap, err := SourcesToFilesMap(srcs, root)

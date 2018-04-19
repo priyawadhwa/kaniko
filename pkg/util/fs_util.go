@@ -56,8 +56,6 @@ func ExtractFileSystemFromImage(img, directory string) error {
 	if err := os.MkdirAll(directory, 0600); err != nil {
 		return err
 	}
-	logrus.Infof("Unpacking filesystem to %s", directory)
-	logrus.Info(imgSrc.LayerInfosForCopy())
 	return pkgutil.GetFileSystemFromReference(ref, imgSrc, directory, whitelist)
 }
 
@@ -104,7 +102,7 @@ func fileSystemWhitelist(path string) ([]string, error) {
 			}
 			continue
 		}
-		if lineArr[4] != constants.RootDir {
+		if lineArr[4] != constants.RootDir && lineArr[4] != constants.KanikoBuildDir {
 			logrus.Debugf("Appending %s from line: %s", lineArr[4], line)
 			whitelist = append(whitelist, lineArr[4])
 		}
@@ -119,8 +117,9 @@ func fileSystemWhitelist(path string) ([]string, error) {
 // RelativeFiles returns a list of all files at the filepath relative to root
 func RelativeFiles(fp string, root string) ([]string, error) {
 	var files []string
-	logrus.Debugf("Getting files and contents at root %s", fp)
-	err := filepath.Walk(fp, func(path string, info os.FileInfo, err error) error {
+	fullPath := filepath.Join(root, fp)
+	logrus.Debugf("Getting files and contents at root %s", fullPath)
+	err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -217,7 +216,7 @@ func DownloadFileToDest(rawurl, dest string) error {
 
 // Copies over all files in src directory to dest directory
 func CopyDir(src, dest string) error {
-	files, err := RelativeFiles(src, src)
+	files, err := RelativeFiles("", src)
 	if err != nil {
 		return err
 	}
