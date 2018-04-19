@@ -24,7 +24,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 ORG := github.com/GoogleContainerTools
 PROJECT := kaniko
-REGISTRY?=gcr.io/kaniko-project
+REGISTRY?=gcr.io/priya-wadhwa
 
 REPOPATH ?= $(ORG)/$(PROJECT)
 

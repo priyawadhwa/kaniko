@@ -35,7 +35,7 @@ var whitelist = []string{"/kaniko"}
 var volumeWhitelist = []string{}
 
 // ExtractFileSystemFromImage pulls an image and unpacks it to a file system at root
-func ExtractFileSystemFromImage(img string) error {
+func ExtractFileSystemFromImage(img, directory string) error {
 	whitelist, err := fileSystemWhitelist(constants.WhitelistPath)
 	if err != nil {
 		return err
@@ -53,7 +53,12 @@ func ExtractFileSystemFromImage(img string) error {
 	if err != nil {
 		return err
 	}
-	return pkgutil.GetFileSystemFromReference(ref, imgSrc, constants.RootDir, whitelist)
+	if err := os.MkdirAll(directory, 0600); err != nil {
+		return err
+	}
+	logrus.Infof("Unpacking filesystem to %s", directory)
+	logrus.Info(imgSrc.LayerInfosForCopy())
+	return pkgutil.GetFileSystemFromReference(ref, imgSrc, directory, whitelist)
 }
 
 // PathInWhitelist returns true if the path is whitelisted
@@ -114,9 +119,8 @@ func fileSystemWhitelist(path string) ([]string, error) {
 // RelativeFiles returns a list of all files at the filepath relative to root
 func RelativeFiles(fp string, root string) ([]string, error) {
 	var files []string
-	fullPath := filepath.Join(root, fp)
-	logrus.Debugf("Getting files and contents at root %s", fullPath)
-	err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+	logrus.Debugf("Getting files and contents at root %s", fp)
+	err := filepath.Walk(fp, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -209,4 +213,50 @@ func DownloadFileToDest(rawurl, dest string) error {
 		}
 	}
 	return os.Chtimes(dest, mTime, mTime)
+}
+
+// Copies over all files in src directory to dest directory
+func CopyDir(src, dest string) error {
+	files, err := RelativeFiles(src, src)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		logrus.Infof("Looking at file %s", file)
+		fullPath := filepath.Join(src, file)
+		fi, err := os.Stat(fullPath)
+		if err != nil {
+			return err
+		}
+		destPath := filepath.Join(dest, file)
+		if fi.IsDir() {
+			logrus.Infof("Creating directory %s", destPath)
+			if err := os.MkdirAll(destPath, fi.Mode()); err != nil {
+				return err
+			}
+		} else if fi.Mode()&os.ModeSymlink != 0 {
+			// If file is a symlink, we want to create the same relative symlink
+			link, err := os.Readlink(fullPath)
+			if err != nil {
+				return err
+			}
+			linkDst := filepath.Join(destPath, link)
+			if err := os.Symlink(linkDst, destPath); err != nil {
+				logrus.Errorf("unable to symlink %s to %s", linkDst, destPath)
+				return err
+			}
+		} else {
+			// ... Else, we want to copy over a file
+			logrus.Infof("Copying file %s to %s", file, destPath)
+			srcFile, err := os.Open(fullPath)
+			if err != nil {
+				return err
+			}
+			defer srcFile.Close()
+			if err := CreateFile(destPath, srcFile, fi.Mode()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

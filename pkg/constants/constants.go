@@ -46,6 +46,10 @@ const (
 
 	// NoBaseImage is the scratch image
 	NoBaseImage = "scratch"
+
+	// Constants for shared /kaniko-build/ volume
+	KanikoBuildDir  = "/kaniko-build/"
+	KanikoBuildRoot = "/kaniko-build/root"
 )
 
 // KanikoBuildFiles is the list of files required to build kaniko

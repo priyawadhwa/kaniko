@@ -17,6 +17,8 @@ limitations under the License.
 package commands
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,6 +41,33 @@ func (c *CopyCommand) ExecuteCommand(config *manifest.Schema2Config) error {
 
 	logrus.Infof("cmd: copy %s", srcs)
 	logrus.Infof("dest: %s", dest)
+
+	logrus.Info(c.buildcontext)
+
+	files, err := ioutil.ReadDir("./")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Reading dir")
+	for _, f := range files {
+		fmt.Println(f.Name())
+	}
+	files, err = ioutil.ReadDir("/kaniko/buildcontext")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Reading dir absolute")
+	for _, f := range files {
+		fmt.Println(f.Name())
+	}
+	files, err = ioutil.ReadDir("./kaniko")
+	if err != nil {
+		return err
+	}
+	fmt.Println("Reading dir nota bsolute")
+	for _, f := range files {
+		fmt.Println(f.Name())
+	}
 
 	// First, resolve any environment replacement
 	resolvedEnvs, err := util.ResolveEnvironmentReplacementList(c.cmd.SourcesAndDest, config.Env, true)

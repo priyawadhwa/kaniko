@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kaniko
+spec:
+  initContainers:
+    - name: kaniko-pull
+      image: gcr.io/priya-wadhwa/executor:latest
+      args: ["--dockerfile=Dockerfile",
+              "--bucket=kbuild-demo",
+              "--pull"]
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /secret
+        - name: build-dir
+          mountPath: /kaniko-build/
+      env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /secret/kaniko-secret.json
+  containers:
+    - name: kaniko-push
+      image: gcr.io/priya-wadhwa/executor:latest
+      args: ["--destination=gcr.io/priya-wadhwa/test:test", "--push"]
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /secret
+        - name: build-dir
+          mountPath: /kaniko-build/
+  restartPolicy: Never
+  volumes:
+    - name: kaniko-secret
+      secret:
+        secretName: kaniko-secret
+    - name: build-dir
+      emptyDir: {}

@@ -37,10 +37,12 @@ type OriginalPerm struct {
 }
 
 func unpackTar(tr *tar.Reader, path string, whitelist []string) error {
+	logrus.Infof("Unpacking tar to path %s", path)
 	originalPerms := make([]OriginalPerm, 0)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
+			logrus.Info("End of tar archive")
 			// end of tar archive
 			break
 		}
@@ -85,7 +87,7 @@ func unpackTar(tr *tar.Reader, path string, whitelist []string) error {
 						perm: originalMode,
 					})
 				}
-				logrus.Debugf("Creating directory %s with permissions %v", target, mode)
+				logrus.Infof("Creating directory %s with permissions %v", target, mode)
 				if err := os.MkdirAll(target, mode); err != nil {
 					return err
 				}
