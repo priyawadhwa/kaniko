@@ -46,6 +46,9 @@ const (
 
 	// NoBaseImage is the scratch image
 	NoBaseImage = "scratch"
+
+	// WhiteoutPrefix for whited out files
+	WhiteoutPrefix = ".wh."
 )
 
 // KanikoBuildFiles is the list of files required to build kaniko

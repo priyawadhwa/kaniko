@@ -20,15 +20,17 @@ import (
 	"archive/tar"
 	"compress/bzip2"
 	"compress/gzip"
-	"io"
-	"io/ioutil"
-	"os"
-	"syscall"
-
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
+	"github.com/GoogleContainerTools/kaniko/pkg/constants"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"syscall"
 )
 
 var hardlinks = make(map[uint64]string)
@@ -70,6 +72,24 @@ func AddToTar(p string, i os.FileInfo, w *tar.Writer) error {
 		return err
 	}
 	return nil
+}
+
+// AddWhiteoutToTar adds the whiteout of a file to tar
+func AddWhiteoutToTar(file string, w *tar.Writer) error {
+	file = filepath.Clean(file)
+	dir := filepath.Dir(file)
+	whiteoutBase := constants.WhiteoutPrefix + filepath.Base(file)
+	whiteoutFilename := filepath.Join(dir, whiteoutBase)
+	if strings.HasPrefix(whiteoutFilename, "/") {
+		whiteoutFilename = strings.TrimPrefix(whiteoutFilename, "/")
+	}
+	logrus.Infof("Adding to tar %s", whiteoutFilename)
+	hdr := &tar.Header{
+		Name:     whiteoutFilename,
+		Typeflag: tar.TypeReg,
+		Size:     0,
+	}
+	return w.WriteHeader(hdr)
 }
 
 // Returns true if path is hardlink, and the link destination

@@ -17,25 +17,27 @@ limitations under the License.
 package snapshot
 
 type LayeredMap struct {
-	layers []map[string]string
-	hasher func(string) (string, error)
+	Layers        []map[string]string
+	WhiteoutFiles map[string]bool
+	hasher        func(string) (string, error)
 }
 
 func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
 	l := LayeredMap{
 		hasher: h,
 	}
-	l.layers = []map[string]string{}
+	l.Layers = []map[string]string{}
+	l.WhiteoutFiles = make(map[string]bool)
 	return &l
 }
 
 func (l *LayeredMap) Snapshot() {
-	l.layers = append(l.layers, map[string]string{})
+	l.Layers = append(l.Layers, map[string]string{})
 }
 
 func (l *LayeredMap) Get(s string) (string, bool) {
-	for i := len(l.layers) - 1; i >= 0; i-- {
-		if v, ok := l.layers[i][s]; ok {
+	for i := len(l.Layers) - 1; i >= 0; i-- {
+		if v, ok := l.Layers[i][s]; ok {
 			return v, ok
 		}
 	}
@@ -51,6 +53,6 @@ func (l *LayeredMap) MaybeAdd(s string) (bool, error) {
 	if ok && newV == oldV {
 		return false, nil
 	}
-	l.layers[len(l.layers)-1][s] = newV
+	l.Layers[len(l.Layers)-1][s] = newV
 	return true, nil
 }

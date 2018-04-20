@@ -22,11 +22,11 @@ import (
 
 	"github.com/GoogleContainerTools/kaniko/pkg/util"
 	"github.com/sirupsen/logrus"
-
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Snapshotter holds the root directory from which to take snapshots, and a list of snapshots taken
@@ -84,6 +84,7 @@ func (s *Snapshotter) TakeSnapshotOfFiles(files []string) ([]byte, error) {
 	defer w.Close()
 	filesAdded := false
 	for _, file := range files {
+		file = filepath.Clean(file)
 		info, err := os.Lstat(file)
 		if err != nil {
 			return nil, err
@@ -99,6 +100,7 @@ func (s *Snapshotter) TakeSnapshotOfFiles(files []string) ([]byte, error) {
 		}
 		if maybeAdd {
 			filesAdded = true
+			s.l.WhiteoutFiles[file] = false
 			util.AddToTar(file, info, w)
 		}
 	}
@@ -121,15 +123,55 @@ func (s *Snapshotter) snapShotFS(f io.Writer) (bool, error) {
 		}
 
 		// Only add to the tar if we add it to the layeredmap.
+		path = filepath.Clean(path)
 		maybeAdd, err := s.l.MaybeAdd(path)
 		if err != nil {
 			return err
 		}
 		if maybeAdd {
 			filesAdded = true
+			s.l.WhiteoutFiles[path] = false
+			logrus.Infof("Adding %s to tar", path)
 			return util.AddToTar(path, info, w)
 		}
 		return nil
 	})
-	return filesAdded, err
+	if err != nil {
+		return false, err
+	}
+	if err := s.checkForRemovedFiles(w); err != nil {
+		return false, err
+	}
+	return filesAdded, nil
+}
+
+func (s *Snapshotter) checkForRemovedFiles(f *tar.Writer) error {
+	for _, layer := range s.l.Layers {
+		for file := range layer {
+			file = filepath.Clean(file)
+			// We only consider adding a whiteout file if the file no longer exists
+			if !util.FilepathExists(file) {
+				// First, we want to check to see if any higher level directories
+				// have alrady been whited out
+				elements := strings.Split(file, "/")
+				dirPath := "/"
+				for _, d := range elements {
+					dirPath = filepath.Join(dirPath, d)
+					if val, ok := s.l.WhiteoutFiles[dirPath]; ok {
+						if val {
+							logrus.Infof("%s already whited out, ignoring", file)
+							continue
+						}
+					}
+				}
+				// Else, we add the file as a whiteout file
+				logrus.Infof("Trying to add %s to whiteouts", file)
+				if err := util.AddWhiteoutToTar(file, f); err != nil {
+					return err
+				}
+				s.l.WhiteoutFiles[file] = true
+			}
+		}
+	}
+	return nil
 }
