@@ -19,13 +19,17 @@ steps:
     dir: go/src/github.com/GoogleContainerTools/kaniko
     env: ["GOPATH=/workspace/go/"]
   # First, build kaniko
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-f", "deploy/Dockerfile",
-           "-t", "gcr.io/kaniko-project/executor:${COMMIT_SHA}", "."]
-    dir: go/src/github.com/GoogleContainerTools/kaniko  
-  # Then, build kaniko:debug
-  - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-f", "deploy/Dockerfile_debug",
-           "-t", "gcr.io/kaniko-project/executor:debug-${COMMIT_SHA}", "."] 
-    dir: go/src/github.com/GoogleContainerTools/kaniko
-images: ["gcr.io/kaniko-project/executor:${COMMIT_SHA}", "gcr.io/kaniko-project/executor:debug-${COMMIT_SHA}"]
+  - name: "gcr.io/priya-wadhwa/executor:latest"
+    args: ["--dockerfile", "/workspace/go/src/github.com/GoogleContainerTools/kaniko/deploy/Dockerfile",
+           "--context", "/workspace/go/src/github.com/GoogleContainerTools/kaniko", 
+           "--destination", "gcr.io/priya-wadhwa/executor:initial-${COMMIT_SHA}"]
+  # Then, build it again with itself
+  - name: "gcr.io/priya-wadhwa/executor:initial-${COMMIT_SHA}"
+    args: ["--dockerfile", "/workspace/go/src/github.com/GoogleContainerTools/kaniko/deploy/Dockerfile",
+           "--context", "/workspace/go/src/github.com/GoogleContainerTools/kaniko", 
+           "--destination", "gcr.io/priya-wadhwa/executor:${COMMIT_SHA}"]
+  # # Then, build kaniko:debug
+  # - name: "gcr.io/cloud-builders/docker"
+  #   args: ["build", "-f", "deploy/Dockerfile_debug",
+  #          "-t", "gcr.io/kaniko-project/executor:debug-${COMMIT_SHA}", "."] 
+  #   dir: go/src/github.com/GoogleContainerTools/kaniko

@@ -206,9 +206,11 @@ func resolveOnBuild(stage *instructions.Stage, config *v1.Config) error {
 // setDefaultEnv sets default values for HOME and PATH so that
 // config.json and docker-credential-gcr can be accessed
 func setDefaultEnv() error {
+	logrus.Infof("Getting values of etc_ssl_dir", os.Getenv("SSL_CERT_DIR"))
 	defaultEnvs := map[string]string{
-		"HOME": "/root",
-		"PATH": "/usr/local/bin/",
+		"HOME":         "/root",
+		"PATH":         "/usr/local/bin/",
+		"SSL_CERT_DIR": "/kaniko/ssl/certs",
 	}
 	for key, val := range defaultEnvs {
 		if err := os.Setenv(key, val); err != nil {
