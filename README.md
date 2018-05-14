@@ -32,7 +32,14 @@ We then execute the commands in the Dockerfile, snapshotting the filesystem in u
 After each command, we append a layer of changed files to the base image (if there are any) and update image metadata.
 
 ### Known Issues
-kaniko does not support building Windows containers.
+
+The majority of Dockerfile commands can be executed with kaniko, but we're still working on supporting the following commands:
+
+* HEALTHCHECK
+
+Multi-Stage Dockerfiles are also unsupported currently, but will be ready soon.
+
+kaniko also does not support building Windows containers.
 
 ## Demo
 
