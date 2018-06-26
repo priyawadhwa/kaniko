@@ -25,7 +25,3 @@ type Dir struct {
 func (f *Dir) UnpackTarFromBuildContext(directory string) (string, error) {
 	return f.context, nil
 }
-
-func (f *Dir) SetContext(srcContext string) {
-	f.context = srcContext
-}

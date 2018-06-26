@@ -55,7 +55,3 @@ func (s *S3) UnpackTarFromBuildContext(directory string) (string, error) {
 
 	return directory, util.UnpackCompressedTar(tarPath, directory)
 }
-
-func (s *S3) SetContext(srcContext string) {
-	s.context = srcContext
-}

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -135,7 +134,7 @@ func resolveSourceContext() error {
 	}
 	if bucket != "" {
 		if !strings.Contains(bucket, "://") {
-			srcContext = fmt.Sprintf("gs://%s", bucket)
+			srcContext = constants.GCSBuildContextPrefix + bucket
 		} else {
 			srcContext = bucket
 		}
