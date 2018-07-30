@@ -41,9 +41,17 @@ func (s *ShellCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.B
 	return nil
 }
 
+func (s *ShellCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot returns an empty array since this is a metadata command
 func (s *ShellCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+func (s *ShellCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

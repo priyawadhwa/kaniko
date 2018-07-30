@@ -39,9 +39,17 @@ func (h *HealthCheckCommand) ExecuteCommand(config *v1.Config, buildArgs *docker
 	return nil
 }
 
+func (h *HealthCheckCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot returns an empty array since this is a metadata command
 func (h *HealthCheckCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+func (h *HealthCheckCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

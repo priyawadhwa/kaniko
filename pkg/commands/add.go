@@ -111,9 +111,18 @@ func (a *AddCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bui
 	return nil
 }
 
+func (a *AddCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot should return an empty array if still nil; no files were changed
 func (a *AddCommand) FilesToSnapshot() []string {
 	return a.snapshotFiles
+}
+
+// FilesToSnapshot should return an empty array if still nil; no files were changed
+func (a *AddCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config

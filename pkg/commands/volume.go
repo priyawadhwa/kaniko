@@ -66,8 +66,16 @@ func (v *VolumeCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.
 	return nil
 }
 
+func (v *VolumeCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 func (v *VolumeCommand) FilesToSnapshot() []string {
 	return v.snapshotFiles
+}
+
+func (v *VolumeCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 func (v *VolumeCommand) CreatedBy() string {

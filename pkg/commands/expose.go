@@ -62,6 +62,14 @@ func (r *ExposeCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.
 	return nil
 }
 
+func (r *ExposeCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
+func (r *ExposeCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
+}
+
 func validProtocol(protocol string) bool {
 	validProtocols := [2]string{"tcp", "udp"}
 	for _, p := range validProtocols {

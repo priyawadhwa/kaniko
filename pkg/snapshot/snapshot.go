@@ -19,12 +19,13 @@ package snapshot
 import (
 	"archive/tar"
 	"bytes"
-	"github.com/GoogleContainerTools/kaniko/pkg/util"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/GoogleContainerTools/kaniko/pkg/util"
+	"github.com/sirupsen/logrus"
 )
 
 // Snapshotter holds the root directory from which to take snapshots, and a list of snapshots taken
@@ -68,6 +69,50 @@ func (s *Snapshotter) TakeSnapshot(files []string) ([]byte, error) {
 	return contents, err
 }
 
+// TakeLocalSnapshot takes a snapshot of local files and saves them to tarball
+// at the correct destination path
+func (s *Snapshotter) TakeLocalSnapshot(files map[string]string) ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	filesAdded, err := s.snapshotLocalFiles(buf, files)
+	if err != nil {
+		return nil, err
+	}
+	contents := buf.Bytes()
+	if !filesAdded {
+		return nil, nil
+	}
+	return contents, err
+}
+
+func (s *Snapshotter) snapshotLocalFiles(f io.Writer, files map[string]string) (bool, error) {
+	s.hardlinks = map[uint64]string{}
+	s.l.Snapshot()
+
+	filesAdded := false
+	w := tar.NewWriter(f)
+	defer w.Close()
+
+	for file, dest := range files {
+		info, err := os.Lstat(file)
+		if err != nil {
+			return false, err
+		}
+
+		// Only add to the tar if we add it to the layeredmap.
+		maybeAdd, err := s.l.MaybeAdd(file)
+		if err != nil {
+			return false, err
+		}
+		if maybeAdd {
+			filesAdded = true
+			if err := util.AddToTar(file, dest, info, nil, w); err != nil {
+				return false, err
+			}
+		}
+	}
+	return filesAdded, nil
+}
+
 // snapshotFiles takes a snapshot of specific files
 // Used for ADD/COPY commands, when we know which files have changed
 func (s *Snapshotter) snapshotFiles(f io.Writer, files []string) (bool, error) {
@@ -109,7 +154,7 @@ func (s *Snapshotter) snapshotFiles(f io.Writer, files []string) (bool, error) {
 		}
 		if maybeAdd {
 			filesAdded = true
-			if err := util.AddToTar(file, info, s.hardlinks, w); err != nil {
+			if err := util.AddToTar(file, file, info, s.hardlinks, w); err != nil {
 				return false, err
 			}
 		}
@@ -164,7 +209,7 @@ func (s *Snapshotter) snapShotFS(f io.Writer) (bool, error) {
 		if maybeAdd {
 			logrus.Debugf("Adding %s to layer, because it was changed.", path)
 			filesAdded = true
-			if err := util.AddToTar(path, info, s.hardlinks, w); err != nil {
+			if err := util.AddToTar(path, path, info, s.hardlinks, w); err != nil {
 				return false, err
 			}
 		}

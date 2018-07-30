@@ -51,9 +51,17 @@ func (w *WorkdirCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile
 	return os.MkdirAll(config.WorkingDir, 0755)
 }
 
+func (w *WorkdirCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot returns the workingdir, which should have been created if it didn't already exist
 func (w *WorkdirCommand) FilesToSnapshot() []string {
 	return w.snapshotFiles
+}
+
+func (w *WorkdirCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

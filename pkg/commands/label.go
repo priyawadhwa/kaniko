@@ -36,6 +36,10 @@ func (r *LabelCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.B
 	return updateLabels(r.cmd.Labels, config, buildArgs)
 }
 
+func (r *LabelCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 func updateLabels(labels []instructions.KeyValuePair, config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
 	existingLabels := config.Labels
 	if existingLabels == nil {
@@ -70,6 +74,11 @@ func updateLabels(labels []instructions.KeyValuePair, config *v1.Config, buildAr
 // No files have changed, this command only touches metadata.
 func (r *LabelCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+// No files have changed, this command only touches metadata.
+func (r *LabelCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

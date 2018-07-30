@@ -71,7 +71,7 @@ func DoBuild(k KanikoBuildArgs) (v1.Image, error) {
 	}
 	dockerfile.ResolveStages(stages)
 
-	hasher, err := getHasher(k.SnapshotMode)
+	hasher, err := GetHasher(k.SnapshotMode)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func saveStageAsTarball(stageIndex int, image v1.Image) error {
 	return tarball.WriteToFile(tarPath, destRef, image, nil)
 }
 
-func getHasher(snapshotMode string) (func(string) (string, error), error) {
+func GetHasher(snapshotMode string) (func(string) (string, error), error) {
 	if snapshotMode == constants.SnapshotModeTime {
 		logrus.Info("Only file modification time will be considered when snapshotting")
 		return util.MtimeHasher(), nil

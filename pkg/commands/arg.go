@@ -50,9 +50,18 @@ func (r *ArgCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bui
 	return nil
 }
 
+func (r *ArgCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot returns an empty array since this command only touches metadata.
 func (r *ArgCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+// LocalFilesToSnapshot returns an empty array since this command only touches metadata.
+func (r *ArgCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

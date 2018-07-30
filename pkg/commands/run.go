@@ -17,6 +17,7 @@ limitations under the License.
 package commands
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -114,9 +115,17 @@ func (r *RunCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bui
 	return nil
 }
 
+func (r *RunCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return fmt.Errorf("cannot execute RUN commands locally")
+}
+
 // FilesToSnapshot returns nil for this command because we don't know which files
 // have changed, so we snapshot the entire system.
 func (r *RunCommand) FilesToSnapshot() []string {
+	return nil
+}
+
+func (r *RunCommand) LocalFilesToSnapshot() map[string]string {
 	return nil
 }
 

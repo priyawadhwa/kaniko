@@ -32,11 +32,11 @@ import (
 )
 
 // AddToTar adds the file i to tar w at path p
-func AddToTar(p string, i os.FileInfo, hardlinks map[uint64]string, w *tar.Writer) error {
+func AddToTar(file, dest string, i os.FileInfo, hardlinks map[uint64]string, w *tar.Writer) error {
 	linkDst := ""
 	if i.Mode()&os.ModeSymlink != 0 {
 		var err error
-		linkDst, err = os.Readlink(p)
+		linkDst, err = os.Readlink(file)
 		if err != nil {
 			return err
 		}
@@ -45,9 +45,9 @@ func AddToTar(p string, i os.FileInfo, hardlinks map[uint64]string, w *tar.Write
 	if err != nil {
 		return err
 	}
-	hdr.Name = p
+	hdr.Name = dest
 
-	hardlink, linkDst := checkHardlink(p, hardlinks, i)
+	hardlink, linkDst := checkHardlink(file, hardlinks, i)
 	if hardlink {
 		hdr.Linkname = linkDst
 		hdr.Typeflag = tar.TypeLink
@@ -59,7 +59,7 @@ func AddToTar(p string, i os.FileInfo, hardlinks map[uint64]string, w *tar.Write
 	if !(i.Mode().IsRegular()) || hardlink {
 		return nil
 	}
-	r, err := os.Open(p)
+	r, err := os.Open(file)
 	if err != nil {
 		return err
 	}

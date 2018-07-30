@@ -35,10 +35,14 @@ GO_LDFLAGS += -w -s # Drop debugging symbols.
 GO_LDFLAGS += '
 
 EXECUTOR_PACKAGE = $(REPOPATH)/cmd/executor
+KANIKO_LOCAL_PACKAGE = $(REPOPATH)/cmd/local
 KANIKO_PROJECT = $(REPOPATH)/kaniko
 
 out/executor: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(EXECUTOR_PACKAGE)
+
+out/kaniko-local: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(KANIKO_LOCAL_PACKAGE)
 
 .PHONY: test
 test: out/executor

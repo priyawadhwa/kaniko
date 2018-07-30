@@ -34,6 +34,8 @@ type CopyCommand struct {
 	cmd           *instructions.CopyCommand
 	buildcontext  string
 	snapshotFiles []string
+	// Create a map of [local path]:[destination path]
+	localSnapshotFiles map[string]string
 }
 
 func (c *CopyCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
@@ -104,9 +106,39 @@ func (c *CopyCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bu
 	return nil
 }
 
+func (c *CopyCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	srcs := c.cmd.SourcesAndDest[:len(c.cmd.SourcesAndDest)-1]
+	dest := c.cmd.SourcesAndDest[len(c.cmd.SourcesAndDest)-1]
+
+	logrus.Infof("cmd: copy %s", srcs)
+	logrus.Infof("dest: %s", dest)
+
+	c.localSnapshotFiles = map[string]string{}
+	// For each source, iterate through and copy it over
+	for _, src := range srcs {
+		fullPath := filepath.Join(c.buildcontext, src)
+		cwd := config.WorkingDir
+		if cwd == "" {
+			cwd = constants.RootDir
+		}
+		destPath, err := util.DestinationFilepath(src, dest, cwd)
+		if err != nil {
+			return err
+		}
+		// Add to map of [local path]:[destination path]
+		logrus.Infof("Adding %s:%s to local snapshot files map", fullPath, destPath)
+		c.localSnapshotFiles[fullPath] = destPath
+	}
+	return nil
+}
+
 // FilesToSnapshot should return an empty array if still nil; no files were changed
 func (c *CopyCommand) FilesToSnapshot() []string {
 	return c.snapshotFiles
+}
+
+func (c *CopyCommand) LocalFilesToSnapshot() map[string]string {
+	return c.localSnapshotFiles
 }
 
 // CreatedBy returns some information about the command for the image config

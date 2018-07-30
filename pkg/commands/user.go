@@ -59,8 +59,16 @@ func (r *UserCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bu
 	return nil
 }
 
+func (r *UserCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 func (r *UserCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+func (r *UserCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 func (r *UserCommand) CreatedBy() string {

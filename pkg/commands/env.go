@@ -38,9 +38,17 @@ func (e *EnvCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bui
 	return util.UpdateConfigEnv(newEnvs, config, replacementEnvs)
 }
 
+func (e *EnvCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // We know that no files have changed, so return an empty array
 func (e *EnvCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+func (e *EnvCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

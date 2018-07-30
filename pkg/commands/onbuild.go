@@ -39,9 +39,17 @@ func (o *OnBuildCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile
 	return nil
 }
 
+func (o *OnBuildCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot returns that no files have changed, this command only touches metadata.
 func (o *OnBuildCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+func (o *OnBuildCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history

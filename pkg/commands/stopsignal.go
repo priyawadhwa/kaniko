@@ -54,9 +54,17 @@ func (s *StopSignalCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerf
 	return nil
 }
 
+func (s *StopSignalCommand) ExecuteCommandLocally(config *v1.Config, buildArgs *dockerfile.BuildArgs) error {
+	return nil
+}
+
 // FilesToSnapshot returns an empty array since this is a metadata command
 func (s *StopSignalCommand) FilesToSnapshot() []string {
 	return []string{}
+}
+
+func (s *StopSignalCommand) LocalFilesToSnapshot() map[string]string {
+	return nil
 }
 
 // CreatedBy returns some information about the command for the image config history
