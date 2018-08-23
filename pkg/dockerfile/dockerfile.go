@@ -23,26 +23,59 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/kaniko/pkg/config"
+	"github.com/GoogleContainerTools/kaniko/pkg/util"
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	"github.com/pkg/errors"
 )
 
-// Stages reads the Dockerfile, validates it's contents, and returns stages
-func Stages(dockerfilePath, target string) ([]instructions.Stage, error) {
-	d, err := ioutil.ReadFile(dockerfilePath)
+// Stages parses a Dockerfile and returns an array of KanikoStage
+func Stages(opts *config.KanikoOptions) ([]config.KanikoStage, error) {
+	d, err := ioutil.ReadFile(opts.DockerfilePath)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("reading dockerfile at path %s", opts.DockerfilePath))
 	}
-
 	stages, err := Parse(d)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "parsing dockerfile")
 	}
-	if err := ValidateTarget(stages, target); err != nil {
+	targetStage, err := targetStage(stages, opts.Target)
+	if err != nil {
 		return nil, err
 	}
 	ResolveStages(stages)
-	return stages, nil
+	var kanikoStages []config.KanikoStage
+	for index, stage := range stages {
+		resolvedBaseName, err := util.ResolveEnvironmentReplacement(stage.BaseName, opts.BuildArgs, false)
+		if err != nil {
+			return nil, errors.Wrap(err, "resolving base name")
+		}
+		stage.Name = resolvedBaseName
+		kanikoStages = append(kanikoStages, config.KanikoStage{
+			Stage:                  stage,
+			BaseImageIndex:         baseImageIndex(opts, index, stages),
+			BaseImageStoredLocally: (baseImageIndex(opts, index, stages) != -1),
+			SaveStage:              saveStage(index, stages),
+			FinalStage:             index == targetStage,
+		})
+		if index == targetStage {
+			break
+		}
+	}
+	return kanikoStages, nil
+}
+
+func baseImageIndex(opts *config.KanikoOptions, currentStage int, stages []instructions.Stage) int {
+	for i, stage := range stages {
+		if i > currentStage {
+			break
+		}
+		if stage.Name == stages[currentStage].BaseName {
+			return i
+		}
+	}
+	return -1
 }
 
 // Parse parses the contents of a Dockerfile and returns a list of commands
@@ -58,16 +91,16 @@ func Parse(b []byte) ([]instructions.Stage, error) {
 	return stages, err
 }
 
-func ValidateTarget(stages []instructions.Stage, target string) error {
+func targetStage(stages []instructions.Stage, target string) (int, error) {
 	if target == "" {
-		return nil
+		return len(stages) - 1, nil
 	}
-	for _, stage := range stages {
+	for i, stage := range stages {
 		if stage.Name == target {
-			return nil
+			return i, nil
 		}
 	}
-	return fmt.Errorf("%s is not a valid target build stage", target)
+	return -1, fmt.Errorf("%s is not a valid target build stage", target)
 }
 
 // ResolveStages resolves any calls to previous stages with names to indices
@@ -111,7 +144,7 @@ func ParseCommands(cmdArray []string) ([]instructions.Command, error) {
 }
 
 // SaveStage returns true if the current stage will be needed later in the Dockerfile
-func SaveStage(index int, stages []instructions.Stage) bool {
+func saveStage(index int, stages []instructions.Stage) bool {
 	for stageIndex, stage := range stages {
 		if stageIndex <= index {
 			continue
