@@ -22,11 +22,14 @@ import (
 	"net/http"
 
 	"github.com/GoogleContainerTools/kaniko/pkg/config"
+	"github.com/GoogleContainerTools/kaniko/pkg/constants"
 	"github.com/GoogleContainerTools/kaniko/pkg/version"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
@@ -40,6 +43,33 @@ type withUserAgent struct {
 func (w *withUserAgent) RoundTrip(r *http.Request) (*http.Response, error) {
 	r.Header.Set("User-Agent", fmt.Sprintf("kaniko/%s", version.Version()))
 	return w.t.RoundTrip(r)
+}
+
+func PushLayerToCache(opts *config.KanikoOptions, cacheKey string, layer v1.Layer, createdBy string) error {
+	logrus.Infof("Trying to push layer to cache now")
+	destination := opts.Destinations[0]
+	destRef, err := name.NewTag(destination, name.WeakValidation)
+	if err != nil {
+		return errors.Wrap(err, "getting tag for destination")
+	}
+	cacheName := fmt.Sprintf("%s/cache:%s", destRef.Context(), cacheKey)
+	logrus.Infof("pushing layer %s to cache", cacheName)
+	empty := empty.Image
+	empty, err = mutate.Append(empty,
+		mutate.Addendum{
+			Layer: layer,
+			History: v1.History{
+				Author:    constants.Author,
+				CreatedBy: createdBy,
+			},
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "appending layer onto empty image")
+	}
+	return DoPush(empty, &config.KanikoOptions{
+		Destinations: []string{cacheName},
+	})
 }
 
 // DoPush is responsible for pushing image to the destinations specified in opts
