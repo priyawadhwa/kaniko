@@ -59,3 +59,8 @@ func (r *ArgCommand) FilesToSnapshot() []string {
 func (r *ArgCommand) CreatedBy() string {
 	return strings.Join([]string{r.cmd.Name(), r.cmd.Key}, " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (r *ArgCommand) CacheCommand() bool {
+	return false
+}

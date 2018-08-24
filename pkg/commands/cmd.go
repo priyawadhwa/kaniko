@@ -72,3 +72,8 @@ func (c *CmdCommand) CreatedBy() string {
 	}
 	return strings.Join(append(cmd, cmdLine), " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (c *CmdCommand) CacheCommand() bool {
+	return false
+}

@@ -65,3 +65,8 @@ func (s *StopSignalCommand) CreatedBy() string {
 
 	return strings.Join(append(entrypoint, s.cmd.Signal), " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (s *StopSignalCommand) CacheCommand() bool {
+	return false
+}

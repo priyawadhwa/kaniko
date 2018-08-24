@@ -47,6 +47,10 @@ func (h *HealthCheckCommand) FilesToSnapshot() []string {
 // CreatedBy returns some information about the command for the image config history
 func (h *HealthCheckCommand) CreatedBy() string {
 	entrypoint := []string{"HEALTHCHECK"}
-
 	return strings.Join(append(entrypoint, strings.Join(h.cmd.Health.Test, " ")), " ")
+}
+
+// CacheCommand returns false since this command shouldn't be cached
+func (h *HealthCheckCommand) CacheCommand() bool {
+	return false
 }

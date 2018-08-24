@@ -60,3 +60,8 @@ func (w *WorkdirCommand) FilesToSnapshot() []string {
 func (w *WorkdirCommand) CreatedBy() string {
 	return w.cmd.Name() + " " + w.cmd.Path
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (w *WorkdirCommand) CacheCommand() bool {
+	return false
+}

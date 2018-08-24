@@ -147,3 +147,8 @@ func (r *RunCommand) CreatedBy() string {
 	}
 	return cmdLine
 }
+
+// CacheCommand returns true since this command should be cached
+func (r *RunCommand) CacheCommand() bool {
+	return true
+}

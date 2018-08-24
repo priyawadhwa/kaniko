@@ -120,3 +120,8 @@ func (a *AddCommand) FilesToSnapshot() []string {
 func (a *AddCommand) CreatedBy() string {
 	return strings.Join(a.cmd.SourcesAndDest, " ")
 }
+
+// CacheCommand returns true since this command should be cached
+func (a *AddCommand) CacheCommand() bool {
+	return true
+}

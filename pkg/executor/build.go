@@ -100,6 +100,31 @@ func (s *stageBuilder) CacheKey(cmd string) (string, error) {
 	return util.SHA256(bytes.NewReader([]byte(s.BaseImage + fsKey + cfHash + cmd)))
 }
 
+func (s *stageBuilder) extractCachedLayer(image v1.Image, createdBy string) error {
+	logrus.Infof("Found cached layer, extracting to fs")
+	if err := util.GetFSFromImage(constants.RootDir, image); err != nil {
+		return errors.Wrap(err, "extracting fs from image")
+	}
+	if _, err := s.Snapshotter.TakeSnapshot(nil); err != nil {
+		return err
+	}
+	logrus.Infof("Appending cached layer to base image and updating config file")
+	layers, err := image.Layers()
+	if err != nil {
+		return errors.Wrap(err, "getting cached layer from image")
+	}
+	s.Image, err = mutate.Append(s.Image,
+		mutate.Addendum{
+			Layer: layers[0],
+			History: v1.History{
+				Author:    constants.Author,
+				CreatedBy: createdBy,
+			},
+		},
+	)
+	return err
+}
+
 func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 	// Unpack file system to root
 	if err := util.GetFSFromImage(constants.RootDir, s.Image); err != nil {
@@ -111,7 +136,6 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 	}
 	buildArgs := dockerfile.NewBuildArgs(opts.BuildArgs)
 	for index, cmd := range s.Stage.Commands {
-
 		finalCmd := index == len(s.Stage.Commands)-1
 		dockerCommand, err := commands.GetCommand(cmd, opts.SrcContext)
 		if err != nil {
@@ -120,35 +144,20 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 		if dockerCommand == nil {
 			continue
 		}
-		// Check cache for layer
-		// If it exists, extract it
-		// Update the config file and append the layer to the image
-		// Continue
 		cacheKey, err := s.CacheKey(dockerCommand.CreatedBy())
 		if err != nil {
 			return err
 		}
-		if image, e := cache.CheckCacheForLayer(opts, cacheKey); e == nil {
-			logrus.Infof("Found cached layer, extracting to fs")
-			if err := util.GetFSFromImage(constants.RootDir, image); err != nil {
-				return errors.Wrap(err, "extracting fs from image")
+		if dockerCommand.CacheCommand() {
+			image, err := cache.CheckCacheForLayer(opts, cacheKey)
+			if err == nil {
+				if err := s.extractCachedLayer(image, dockerCommand.CreatedBy()); err != nil {
+					return err
+				}
+				continue
 			}
-			logrus.Infof("Appending cached layer to base image and updating config file")
-			layers, err := image.Layers()
-			if err != nil {
-				return errors.Wrap(err, "getting cached layer from image")
-			}
-			s.Image, err = mutate.Append(s.Image,
-				mutate.Addendum{
-					Layer: layers[0],
-					History: v1.History{
-						Author:    constants.Author,
-						CreatedBy: dockerCommand.CreatedBy(),
-					},
-				},
-			)
-			continue
 		}
+
 		if err := dockerCommand.ExecuteCommand(&s.ConfigFile.Config, buildArgs); err != nil {
 			return err
 		}
@@ -180,7 +189,11 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 			return err
 		}
 		// Push layer to cache now along with new config file
-		PushLayerToCache(opts, cacheKey, layer, dockerCommand.CreatedBy())
+		if dockerCommand.CacheCommand() {
+			if err := PushLayerToCache(opts, cacheKey, layer, dockerCommand.CreatedBy()); err != nil {
+				return err
+			}
+		}
 		s.Image, err = mutate.Append(s.Image,
 			mutate.Addendum{
 				Layer: layer,

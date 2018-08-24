@@ -51,3 +51,8 @@ func (e *EnvCommand) CreatedBy() string {
 	}
 	return strings.Join(envArray, " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (e *EnvCommand) CacheCommand() bool {
+	return false
+}

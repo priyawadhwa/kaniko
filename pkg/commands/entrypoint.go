@@ -70,3 +70,8 @@ func (e *EntrypointCommand) CreatedBy() string {
 	}
 	return strings.Join(append(entrypoint, cmdLine), " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (e *EntrypointCommand) CacheCommand() bool {
+	return false
+}

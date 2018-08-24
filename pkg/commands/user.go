@@ -67,3 +67,8 @@ func (r *UserCommand) CreatedBy() string {
 	s := []string{r.cmd.Name(), r.cmd.User}
 	return strings.Join(s, " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (r *UserCommand) CacheCommand() bool {
+	return false
+}

@@ -73,3 +73,8 @@ func (v *VolumeCommand) FilesToSnapshot() []string {
 func (v *VolumeCommand) CreatedBy() string {
 	return strings.Join(append([]string{v.cmd.Name()}, v.cmd.Volumes...), " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (v *VolumeCommand) CacheCommand() bool {
+	return false
+}

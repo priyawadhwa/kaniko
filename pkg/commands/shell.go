@@ -53,3 +53,8 @@ func (s *ShellCommand) CreatedBy() string {
 
 	return strings.Join(append(entrypoint, cmdLine), " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (s *ShellCommand) CacheCommand() bool {
+	return false
+}

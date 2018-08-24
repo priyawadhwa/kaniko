@@ -80,3 +80,8 @@ func (r *ExposeCommand) CreatedBy() string {
 	s := []string{r.cmd.Name()}
 	return strings.Join(append(s, r.cmd.Ports...), " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (r *ExposeCommand) CacheCommand() bool {
+	return false
+}

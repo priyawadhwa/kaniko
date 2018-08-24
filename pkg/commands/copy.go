@@ -113,3 +113,8 @@ func (c *CopyCommand) FilesToSnapshot() []string {
 func (c *CopyCommand) CreatedBy() string {
 	return strings.Join(c.cmd.SourcesAndDest, " ")
 }
+
+// CacheCommand returns true since this command should be cached
+func (c *CopyCommand) CacheCommand() bool {
+	return true
+}

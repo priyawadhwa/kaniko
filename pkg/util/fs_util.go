@@ -226,7 +226,7 @@ func extractFile(dest string, hdr *tar.Header, tr io.Reader) error {
 			return err
 		}
 		if err := os.Symlink(filepath.Clean(filepath.Join("/", hdr.Linkname)), path); err != nil {
-			return err
+			logrus.Error(err)
 		}
 
 	case tar.TypeSymlink:
@@ -237,9 +237,8 @@ func extractFile(dest string, hdr *tar.Header, tr io.Reader) error {
 			return err
 		}
 		if err := os.Symlink(hdr.Linkname, path); err != nil {
-			return err
+			logrus.Error(err)
 		}
-
 	}
 	return nil
 }

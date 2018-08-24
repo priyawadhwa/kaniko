@@ -80,3 +80,8 @@ func (r *LabelCommand) CreatedBy() string {
 	}
 	return strings.Join(l, " ")
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (r *LabelCommand) CacheCommand() bool {
+	return false
+}

@@ -34,6 +34,9 @@ type DockerCommand interface {
 	CreatedBy() string
 	// A list of files to snapshot, empty for metadata commands or nil if we don't know
 	FilesToSnapshot() []string
+	// Return true if this command should be true
+	// Only true for RUN/COPY/ADD
+	CacheCommand() bool
 }
 
 func GetCommand(cmd instructions.Command, buildcontext string) (DockerCommand, error) {

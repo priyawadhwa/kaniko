@@ -48,3 +48,8 @@ func (o *OnBuildCommand) FilesToSnapshot() []string {
 func (o *OnBuildCommand) CreatedBy() string {
 	return o.cmd.Expression
 }
+
+// CacheCommand returns false since this command shouldn't be cached
+func (o *OnBuildCommand) CacheCommand() bool {
+	return false
+}
