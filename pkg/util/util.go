@@ -18,6 +18,7 @@ package util
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"os"
@@ -69,6 +70,35 @@ func Hasher() func(string) (string, error) {
 	return hasher
 }
 
+func IgnoreMtimeHasher() func(string) (string, error) {
+	hasher := func(p string) (string, error) {
+		h := md5.New()
+		fi, err := os.Lstat(p)
+		if err != nil {
+			return "", err
+		}
+		h.Write([]byte(fi.Mode().String()))
+
+		h.Write([]byte(strconv.FormatUint(uint64(fi.Sys().(*syscall.Stat_t).Uid), 36)))
+		h.Write([]byte(","))
+		h.Write([]byte(strconv.FormatUint(uint64(fi.Sys().(*syscall.Stat_t).Gid), 36)))
+
+		if fi.Mode().IsRegular() {
+			f, err := os.Open(p)
+			if err != nil {
+				return "", err
+			}
+			defer f.Close()
+			if _, err := io.Copy(h, f); err != nil {
+				return "", err
+			}
+		}
+
+		return hex.EncodeToString(h.Sum(nil)), nil
+	}
+	return hasher
+}
+
 // MtimeHasher returns a hash function, which only looks at mtime to determine if a file has changed
 func MtimeHasher() func(string) (string, error) {
 	hasher := func(p string) (string, error) {
@@ -81,4 +111,10 @@ func MtimeHasher() func(string) (string, error) {
 		return hex.EncodeToString(h.Sum(nil)), nil
 	}
 	return hasher
+}
+
+func SHA256(r io.Reader) (string, error) {
+	hasher := sha256.New()
+	_, err := io.Copy(hasher, r)
+	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), err
 }

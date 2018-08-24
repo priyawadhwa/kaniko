@@ -38,15 +38,7 @@ func Test_Key(t *testing.T) {
 	lm2 := LayeredMap{
 		layers: []map[string]string{map2},
 	}
-	key1, err := lm1.Key()
-	if err != nil {
-		t.Fatal(err)
-	}
-	key2, err := lm2.Key()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if key1 == key2 {
-		t.Fatalf("sad, key1: %s, kedy2: %s", key1, key2)
+	if lm1.Key() != lm2.Key() {
+		t.Fatalf("sad, key1: %s, kedy2: %s", lm1.Key(), lm2.Key())
 	}
 }

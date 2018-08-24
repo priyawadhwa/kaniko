@@ -109,12 +109,13 @@ func (s *Snapshotter) snapshotFiles(f io.Writer, files []string) (bool, error) {
 			return false, err
 		}
 		// Only add to the tar if we add it to the layeredmap.
-		addFile, err := s.l.MaybeAdd(file)
+		addFile, err := s.l.MaybeAdd(file, true)
 		if err != nil {
 			return false, err
 		}
 		if addFile {
 			filesAdded = true
+
 			if err := util.AddToTar(file, info, s.hardlinks, w); err != nil {
 				return false, err
 			}
@@ -182,7 +183,7 @@ func (s *Snapshotter) snapShotFS(f io.Writer) (bool, error) {
 		}
 
 		// Only add to the tar if we add it to the layeredmap.
-		maybeAdd, err := s.l.MaybeAdd(path)
+		maybeAdd, err := s.l.MaybeAdd(path, false)
 		if err != nil {
 			return false, err
 		}
@@ -196,4 +197,9 @@ func (s *Snapshotter) snapShotFS(f io.Writer) (bool, error) {
 	}
 
 	return filesAdded, nil
+}
+
+// FilesystemKey returns a string based on the current state of the file system
+func (s *Snapshotter) FilesystemKey() (string, error) {
+	return s.l.Key()
 }

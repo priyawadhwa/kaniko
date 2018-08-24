@@ -17,17 +17,20 @@ limitations under the License.
 package snapshot
 
 import (
-	"crypto/md5"
-	"fmt"
+	"bytes"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/GoogleContainerTools/kaniko/pkg/util"
+	"github.com/sirupsen/logrus"
 )
 
 type LayeredMap struct {
-	layers    []map[string]string
-	whiteouts []map[string]string
-	hasher    func(string) (string, error)
+	layers        []map[string]string
+	modifiedFiles []map[string]string
+	whiteouts     []map[string]string
+	hasher        func(string) (string, error)
 }
 
 func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
@@ -40,27 +43,20 @@ func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
 
 // Key returns a unique hash for a layered map
 func (l *LayeredMap) Key() (string, error) {
-	var hashes []string
-	for _, layer := range l.layers {
-		for _, v := range layer {
-			hashes = append(hashes, v)
+	var keys []string
+	for _, m := range l.modifiedFiles {
+		for _, v := range m {
+			keys = append(keys, v)
 		}
 	}
-	for _, whiteout := range l.whiteouts {
-		for _, w := range whiteout {
-			hashes = append(hashes, w)
-		}
-	}
-	sort.Strings(hashes)
-	fmt.Println(hashes)
-	hash := sha256.
-	hash := md5.Sum([]byte(strings.Join(hashes, "")))
-	return string(hash[:]), nil
+	sort.Strings(keys)
+	return util.SHA256(bytes.NewReader([]byte(strings.Join(keys, ""))))
 }
 
 func (l *LayeredMap) Snapshot() {
 	l.whiteouts = append(l.whiteouts, map[string]string{})
 	l.layers = append(l.layers, map[string]string{})
+	l.modifiedFiles = append(l.modifiedFiles, map[string]string{})
 }
 
 func (l *LayeredMap) GetFlattenedPathsForWhiteOut() map[string]struct{} {
@@ -105,7 +101,7 @@ func (l *LayeredMap) MaybeAddWhiteout(s string) (bool, error) {
 	return true, nil
 }
 
-func (l *LayeredMap) MaybeAdd(s string) (bool, error) {
+func (l *LayeredMap) MaybeAdd(s string, added bool) (bool, error) {
 	oldV, ok := l.Get(s)
 	newV, err := l.hasher(s)
 	if err != nil {
@@ -115,5 +111,13 @@ func (l *LayeredMap) MaybeAdd(s string) (bool, error) {
 		return false, nil
 	}
 	l.layers[len(l.layers)-1][s] = newV
+	if added {
+		logrus.Infof("adding %s to modified files", s)
+		m, err := util.IgnoreMtimeHasher()(s)
+		if err != nil {
+			return false, err
+		}
+		l.modifiedFiles[len(l.modifiedFiles)-1][s] = m
+	}
 	return true, nil
 }

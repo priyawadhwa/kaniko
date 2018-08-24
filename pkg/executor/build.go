@@ -18,12 +18,15 @@ package executor
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/GoogleContainerTools/kaniko/pkg/cache"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -45,6 +48,7 @@ type stageBuilder struct {
 	v1.Image
 	*v1.ConfigFile
 	*snapshot.Snapshotter
+	BaseImage string
 }
 
 func NewStageBuilder(opts *config.KanikoOptions, stage config.KanikoStage) (*stageBuilder, error) {
@@ -65,12 +69,42 @@ func NewStageBuilder(opts *config.KanikoOptions, stage config.KanikoStage) (*sta
 	}
 	l := snapshot.NewLayeredMap(hasher)
 	snapshotter := snapshot.NewSnapshotter(l, constants.RootDir)
+
+	digest, err := sourceImage.Digest()
+	if err != nil {
+		return nil, err
+	}
 	return &stageBuilder{
 		Stage:       stage,
 		Image:       sourceImage,
 		ConfigFile:  imageConfig,
 		Snapshotter: snapshotter,
+		BaseImage:   digest.String(),
 	}, nil
+}
+
+func (s *stageBuilder) CacheKey(cmd string) (string, error) {
+	fsKey, err := s.Snapshotter.FilesystemKey()
+	if err != nil {
+		return "", err
+	}
+
+	c := bytes.NewBuffer([]byte{})
+	enc := json.NewEncoder(c)
+	enc.Encode(s.ConfigFile)
+
+	cfHash, err := util.SHA256(c)
+	if err != nil {
+		return "", err
+	}
+	logrus.Info(s.Image.ConfigName())
+
+	logrus.Infof("cmd is %s", cmd)
+	logrus.Infof("fskey is %s", fsKey)
+	logrus.Infof("shasum of config file is %s", cfHash)
+	logrus.Infof("digest is %s", s.BaseImage)
+
+	return util.SHA256(bytes.NewReader([]byte(s.BaseImage + fsKey + cfHash + cmd)))
 }
 
 func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
@@ -84,10 +118,7 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 	}
 	buildArgs := dockerfile.NewBuildArgs(opts.BuildArgs)
 	for index, cmd := range s.Stage.Commands {
-		// Check cache for layer
-		// If it exists, extract it
-		// Update the config file and append the layer to the image
-		// Continue
+
 		finalCmd := index == len(s.Stage.Commands)-1
 		dockerCommand, err := commands.GetCommand(cmd, opts.SrcContext)
 		if err != nil {
@@ -95,6 +126,17 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 		}
 		if dockerCommand == nil {
 			continue
+		}
+		// Check cache for layer
+		// If it exists, extract it
+		// Update the config file and append the layer to the image
+		// Continue
+		cacheKey, err := s.CacheKey(dockerCommand.CreatedBy())
+		if err != nil {
+			return err
+		}
+		if _, err := cache.CheckCacheForLayer(opts, cacheKey); err != nil {
+			return err
 		}
 		if err := dockerCommand.ExecuteCommand(&s.ConfigFile.Config, buildArgs); err != nil {
 			return err
