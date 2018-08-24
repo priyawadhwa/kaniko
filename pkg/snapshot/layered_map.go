@@ -17,7 +17,10 @@ limitations under the License.
 package snapshot
 
 import (
+	"crypto/md5"
+	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -33,6 +36,26 @@ func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
 	}
 	l.layers = []map[string]string{}
 	return &l
+}
+
+// Key returns a unique hash for a layered map
+func (l *LayeredMap) Key() (string, error) {
+	var hashes []string
+	for _, layer := range l.layers {
+		for _, v := range layer {
+			hashes = append(hashes, v)
+		}
+	}
+	for _, whiteout := range l.whiteouts {
+		for _, w := range whiteout {
+			hashes = append(hashes, w)
+		}
+	}
+	sort.Strings(hashes)
+	fmt.Println(hashes)
+	hash := sha256.
+	hash := md5.Sum([]byte(strings.Join(hashes, "")))
+	return string(hash[:]), nil
 }
 
 func (l *LayeredMap) Snapshot() {

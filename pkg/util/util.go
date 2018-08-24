@@ -19,12 +19,13 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"strconv"
 	"syscall"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // SetLogLevel sets the logrus logging level

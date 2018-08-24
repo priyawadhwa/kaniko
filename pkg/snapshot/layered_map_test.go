@@ -14,13 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cache
+package snapshot
 
 import (
-	"github.com/GoogleContainerTools/kaniko/pkg/snapshot"
-	"github.com/google/go-containerregistry/pkg/v1"
+	"testing"
 )
 
-func cacheKey(l *snapshot.LayeredMap, config *v1.Config) (string, error) {
+func Test_Key(t *testing.T) {
 
+	map1 := map[string]string{
+		"hey": "hi",
+		"hi":  "hey",
+	}
+	map2 := map[string]string{
+		"hi":  "hey",
+		"hey": "hi",
+	}
+
+	lm1 := LayeredMap{
+		layers: []map[string]string{map1},
+	}
+
+	lm2 := LayeredMap{
+		layers: []map[string]string{map2},
+	}
+	key1, err := lm1.Key()
+	if err != nil {
+		t.Fatal(err)
+	}
+	key2, err := lm2.Key()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key1 == key2 {
+		t.Fatalf("sad, key1: %s, kedy2: %s", key1, key2)
+	}
 }
