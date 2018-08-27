@@ -100,6 +100,7 @@ func IgnoreMtimeHasher() func(string) (string, error) {
 }
 
 // MtimeHasher returns a hash function, which only looks at mtime to determine if a file has changed
+// Note that the mtime can lag, so it's possible that a file will have changed but the mtime may look the same.
 func MtimeHasher() func(string) (string, error) {
 	hasher := func(p string) (string, error) {
 		h := md5.New()

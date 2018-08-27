@@ -154,6 +154,55 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 				if err := s.extractCachedLayer(image, dockerCommand.CreatedBy()); err != nil {
 					return err
 				}
+			}
+		}
+		for index, cmd := range s.Stage.Commands {
+			finalCmd := index == len(s.Stage.Commands)-1
+			dockerCommand, err := commands.GetCommand(cmd, opts.SrcContext)
+			if err != nil {
+				return err
+			}
+			if dockerCommand == nil {
+				continue
+			}
+			if err := dockerCommand.ExecuteCommand(&s.ConfigFile.Config, buildArgs); err != nil {
+				return err
+			}
+			snapshotFiles := dockerCommand.FilesToSnapshot()
+			var contents []byte
+
+			// If this is an intermediate stage, we only snapshot for the last command and we
+			// want to snapshot the entire filesystem since we aren't tracking what was changed
+			// by previous commands.
+			if !s.Stage.FinalStage {
+				if finalCmd {
+					contents, err = s.Snapshotter.TakeSnapshotFS()
+				}
+			} else {
+				// If we are in single snapshot mode, we only take a snapshot once, after all
+				// commands have completed.
+				if opts.SingleSnapshot {
+					if finalCmd {
+						contents, err = s.Snapshotter.TakeSnapshotFS()
+					}
+				} else {
+					// Otherwise, in the final stage we take a snapshot at each command. If we know
+					// the files that were changed, we'll snapshot those explicitly, otherwise we'll
+					// check if anything in the filesystem changed.
+					if snapshotFiles != nil {
+						contents, err = s.Snapshotter.TakeSnapshot(snapshotFiles)
+					} else {
+						contents, err = s.Snapshotter.TakeSnapshotFS()
+					}
+				}
+			}
+			if err != nil {
+				return fmt.Errorf("Error taking snapshot of files for command %s: %s", dockerCommand, err)
+			}
+
+			util.MoveVolumeWhitelistToWhitelist()
+			if contents == nil {
+				logrus.Info("No files were changed, appending empty layer to config. No layer added to image.")
 				continue
 			}
 		}

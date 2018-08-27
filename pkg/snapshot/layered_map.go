@@ -18,6 +18,7 @@ package snapshot
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -101,7 +102,27 @@ func (l *LayeredMap) MaybeAddWhiteout(s string) (bool, error) {
 	return true, nil
 }
 
-func (l *LayeredMap) MaybeAdd(s string, added bool) (bool, error) {
+// Add will add the specified file s to the layered map.
+func (l *LayeredMap) Add(s string) error {
+	newV, err := l.hasher(s)
+	if err != nil {
+		return fmt.Errorf("Error creating hash for %s: %s", s, err)
+	}
+	l.layers[len(l.layers)-1][s] = newV
+	logrus.Infof("adding %s to modified files", s)
+	m, err := util.IgnoreMtimeHasher()(s)
+	if err != nil {
+		return err
+	}
+	l.modifiedFiles[len(l.modifiedFiles)-1][s] = m
+	return nil
+}
+
+// MaybeAdd will add the specified file s to the layered map if
+// the layered map's hashing function determines it has changed. If
+// it has not changed, it will not be added. Returns true if the file
+// was added.
+func (l *LayeredMap) MaybeAdd(s string) (bool, error) {
 	oldV, ok := l.Get(s)
 	newV, err := l.hasher(s)
 	if err != nil {
@@ -111,13 +132,5 @@ func (l *LayeredMap) MaybeAdd(s string, added bool) (bool, error) {
 		return false, nil
 	}
 	l.layers[len(l.layers)-1][s] = newV
-	if added {
-		logrus.Infof("adding %s to modified files", s)
-		m, err := util.IgnoreMtimeHasher()(s)
-		if err != nil {
-			return false, err
-		}
-		l.modifiedFiles[len(l.modifiedFiles)-1][s] = m
-	}
 	return true, nil
 }
