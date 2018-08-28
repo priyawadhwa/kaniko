@@ -30,4 +30,6 @@ type KanikoOptions struct {
 	Reproducible                bool
 	Target                      string
 	NoPush                      bool
+	UseCache                    bool
+	Cache                       string
 }

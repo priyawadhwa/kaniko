@@ -24,8 +24,10 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
@@ -40,6 +42,7 @@ type gcpConfig struct {
 	gcsBucket        string
 	imageRepo        string
 	onbuildBaseImage string
+	cachedImage      string
 }
 
 type imageDetails struct {
@@ -152,6 +155,12 @@ func TestMain(m *testing.M) {
 func TestRun(t *testing.T) {
 	for dockerfile, built := range imageBuilder.FilesBuilt {
 		t.Run("test_"+dockerfile, func(t *testing.T) {
+			if _, ok := imageBuilder.DockerfilesToIgnore[dockerfile]; ok {
+				t.SkipNow()
+			}
+			if _, ok := imageBuilder.TestCacheDockerfiles[dockerfile]; ok {
+				t.SkipNow()
+			}
 			if !built {
 				err := imageBuilder.BuildImage(config.imageRepo, config.gcsBucket, dockerfilesPath, dockerfile)
 				if err != nil {
@@ -170,25 +179,8 @@ func TestRun(t *testing.T) {
 			t.Logf("diff = %s", string(diff))
 
 			expected := fmt.Sprintf(emptyContainerDiff, dockerImage, kanikoImage, dockerImage, kanikoImage)
+			checkContainerDiffOutput(t, diff, expected)
 
-			// Let's compare the json objects themselves instead of strings to avoid
-			// issues with spaces and indents
-			var diffInt interface{}
-			var expectedInt interface{}
-
-			err := json.Unmarshal(diff, &diffInt)
-			if err != nil {
-				t.Error(err)
-				t.Fail()
-			}
-
-			err = json.Unmarshal([]byte(expected), &expectedInt)
-			if err != nil {
-				t.Error(err)
-				t.Fail()
-			}
-
-			testutil.CheckErrorAndDeepEqual(t, false, nil, expectedInt, diffInt)
 		})
 	}
 }
@@ -203,6 +195,9 @@ func TestLayers(t *testing.T) {
 	}
 	for dockerfile, built := range imageBuilder.FilesBuilt {
 		t.Run("test_layer_"+dockerfile, func(t *testing.T) {
+			if _, ok := imageBuilder.DockerfilesToIgnore[dockerfile]; ok {
+				t.SkipNow()
+			}
 			if !built {
 				err := imageBuilder.BuildImage(config.imageRepo, config.gcsBucket, dockerfilesPath, dockerfile)
 				if err != nil {
@@ -220,6 +215,57 @@ func TestLayers(t *testing.T) {
 			}
 		})
 	}
+}
+
+// We want to rebuild the image in Dockerfile_cache and make sure it's the same as the original image
+// Cleanup: Delete the cached layers
+func TestCache(t *testing.T) {
+	for dockerfile := range imageBuilder.TestCacheDockerfiles {
+		t.Run("test_cache_"+dockerfile, func(t *testing.T) {
+			cache := filepath.Join(config.imageRepo, "cache", fmt.Sprintf("%v", time.Now().UnixNano()))
+			// Build the initial image which will cache layers
+			if err := imageBuilder.buildCachedImages(config.imageRepo, cache, dockerfilesPath, dockerfile, 0); err != nil {
+				t.Fatalf("error building cached image for the first time: %v", err)
+			}
+			// Build the second image which should pull from the cache
+			if err := imageBuilder.buildCachedImages(config.imageRepo, cache, dockerfilesPath, dockerfile, 1); err != nil {
+				t.Fatalf("error building cached image for the first time: %v", err)
+			}
+			// Make sure both images are the same
+			kanikoVersion0 := GetVersionedKanikoImage(config.imageRepo, dockerfile, 0)
+			kanikoVersion1 := GetVersionedKanikoImage(config.imageRepo, dockerfile, 1)
+
+			// container-diff
+			containerdiffCmd := exec.Command("container-diff", "diff",
+				kanikoVersion0, kanikoVersion1,
+				"-q", "--type=file", "--type=metadata", "--json")
+
+			diff := RunCommand(containerdiffCmd, t)
+			t.Logf("diff = %s", diff)
+
+			expected := fmt.Sprintf(emptyContainerDiff, kanikoVersion0, kanikoVersion1, kanikoVersion0, kanikoVersion1)
+			checkContainerDiffOutput(t, diff, expected)
+		})
+	}
+}
+
+func checkContainerDiffOutput(t *testing.T, diff []byte, expected string) {
+	// Let's compare the json objects themselves instead of strings to avoid
+	// issues with spaces and indents
+	var diffInt interface{}
+	var expectedInt interface{}
+
+	err := json.Unmarshal(diff, &diffInt)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = json.Unmarshal([]byte(expected), &expectedInt)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testutil.CheckErrorAndDeepEqual(t, false, nil, expectedInt, diffInt)
 }
 
 func checkLayers(t *testing.T, image1, image2 string, offset int) error {

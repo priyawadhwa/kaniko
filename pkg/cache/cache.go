@@ -30,17 +30,22 @@ import (
 )
 
 func CheckCacheForLayer(opts *config.KanikoOptions, cacheKey string) (v1.Image, error) {
-	destination := opts.Destinations[0]
-	destRef, err := name.NewTag(destination, name.WeakValidation)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting tag for destination")
+	cache := opts.Cache
+	logrus.Infof("####################################### Cache is %s", cache)
+	if cache == "" {
+		destination := opts.Destinations[0]
+		destRef, err := name.NewTag(destination, name.WeakValidation)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting tag for destination")
+		}
+		cache = fmt.Sprintf("%s/cache", destRef.Context())
 	}
-	cacheName := fmt.Sprintf("%s/cache:%s", destRef.Context(), cacheKey)
-	logrus.Infof("checking %s for cached layer", cacheName)
+	cache = fmt.Sprintf("%s:%s", cache, cacheKey)
+	logrus.Infof("checking %s for cached layer", cache)
 
-	cacheRef, err := name.NewTag(cacheName, name.WeakValidation)
+	cacheRef, err := name.NewTag(cache, name.WeakValidation)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("getting reference for %s", cacheName))
+		return nil, errors.Wrap(err, fmt.Sprintf("getting reference for %s", cache))
 	}
 	k8sc, err := k8schain.NewNoClient()
 	if err != nil {

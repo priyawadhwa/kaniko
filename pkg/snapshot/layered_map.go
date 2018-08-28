@@ -18,9 +18,9 @@ package snapshot
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/kaniko/pkg/util"
@@ -44,14 +44,10 @@ func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
 
 // Key returns a unique hash for a layered map
 func (l *LayeredMap) Key() (string, error) {
-	var keys []string
-	for _, m := range l.modifiedFiles {
-		for _, v := range m {
-			keys = append(keys, v)
-		}
-	}
-	sort.Strings(keys)
-	return util.SHA256(bytes.NewReader([]byte(strings.Join(keys, ""))))
+	c := bytes.NewBuffer([]byte{})
+	enc := json.NewEncoder(c)
+	enc.Encode(l.modifiedFiles)
+	return util.SHA256(c)
 }
 
 func (l *LayeredMap) Snapshot() {

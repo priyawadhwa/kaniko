@@ -21,33 +21,60 @@ import (
 )
 
 func Test_Key(t *testing.T) {
+	tests := []struct {
+		name  string
+		map1  map[string]string
+		map2  map[string]string
+		equal bool
+	}{
+		{
+			name: "maps are the same",
+			map1: map[string]string{
+				"a": "apple",
+				"b": "bat",
+				"c": "cat",
+			},
+			map2: map[string]string{
+				"c": "cat",
+				"b": "bat",
+				"a": "apple",
+			},
+			equal: true,
+		},
+		{
+			name: "maps are different",
+			map1: map[string]string{
+				"a": "apple",
+				"b": "bat",
+				"c": "cat",
+			},
+			map2: map[string]string{
+				"c": "",
+				"b": "bat",
+				"a": "apple",
+			},
+			equal: false,
+		},
+	}
 
-	map1 := map[string]string{
-		"hey": "hi",
-		"hi":  "hey",
-	}
-	map2 := map[string]string{
-		"hi":  "hey",
-		"hey": "hi",
-	}
-
-	lm1 := LayeredMap{
-		layers: []map[string]string{map1},
-	}
-
-	lm2 := LayeredMap{
-		layers: []map[string]string{map2},
-	}
-
-	k1, err := lm1.Key()
-	if err != nil {
-		t.Fatal(err)
-	}
-	k2, err := lm2.Key()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if k1 != k2 {
-		t.Fatalf("sad, key1: %s, kedy2: %s", k1, k2)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			lm1 := LayeredMap{modifiedFiles: []map[string]string{test.map1}}
+			lm2 := LayeredMap{modifiedFiles: []map[string]string{test.map2}}
+			k1, err := lm1.Key()
+			if err != nil {
+				t.Fatalf("error getting key for map 1: %v", err)
+			}
+			k2, err := lm2.Key()
+			if err != nil {
+				t.Fatalf("error getting key for map 2: %v", err)
+			}
+			if test.equal && k1 != k2 {
+				t.Fatalf("keys differ.\nExpected\n%+v\nActual\n%+v", k1, k2)
+			}
+			if !test.equal && k1 == k2 {
+				t.Fatal("keys are the same, expected different keys")
+			}
+		})
 	}
 }

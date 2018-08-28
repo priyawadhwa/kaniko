@@ -47,15 +47,20 @@ func (w *withUserAgent) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func PushLayerToCache(opts *config.KanikoOptions, cacheKey string, layer v1.Layer, createdBy string) error {
 	logrus.Infof("Trying to push layer to cache now")
-	destination := opts.Destinations[0]
-	destRef, err := name.NewTag(destination, name.WeakValidation)
-	if err != nil {
-		return errors.Wrap(err, "getting tag for destination")
+	cache := opts.Cache
+	if cache == "" {
+		destination := opts.Destinations[0]
+		destRef, err := name.NewTag(destination, name.WeakValidation)
+		if err != nil {
+			return errors.Wrap(err, "getting tag for destination")
+		}
+		cache = fmt.Sprintf("%s/cache", destRef.Context())
 	}
-	cacheName := fmt.Sprintf("%s/cache:%s", destRef.Context(), cacheKey)
-	logrus.Infof("pushing layer %s to cache", cacheName)
+	cache = fmt.Sprintf("%s:%s", cache, cacheKey)
+
+	logrus.Infof("pushing layer %s to cache", cache)
 	empty := empty.Image
-	empty, err = mutate.Append(empty,
+	empty, err := mutate.Append(empty,
 		mutate.Addendum{
 			Layer: layer,
 			History: v1.History{
@@ -68,7 +73,7 @@ func PushLayerToCache(opts *config.KanikoOptions, cacheKey string, layer v1.Laye
 		return errors.Wrap(err, "appending layer onto empty image")
 	}
 	return DoPush(empty, &config.KanikoOptions{
-		Destinations: []string{cacheName},
+		Destinations: []string{cache},
 	})
 }
 
