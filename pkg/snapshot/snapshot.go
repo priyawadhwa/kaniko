@@ -102,7 +102,10 @@ func (s *Snapshotter) snapshotFiles(f io.Writer, files []string) (bool, error) {
 		logrus.Info("No files changed in this command, skipping snapshotting.")
 		return false, nil
 	}
-	logrus.Infof("Taking snapshot of files %v...", files)
+
+	logrus.Infof("Taking snapshot of files...")
+	logrus.Debugf("Files to snapshot are %v", files)
+
 	snapshottedFiles := make(map[string]bool)
 	filesAdded := false
 

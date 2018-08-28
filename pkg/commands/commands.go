@@ -30,12 +30,12 @@ type DockerCommand interface {
 	//  2. Updating metadata fields in the config
 	// It should not change the config history.
 	ExecuteCommand(*v1.Config, *dockerfile.BuildArgs) error
-	// The config history has a "created by" field, should return information about the command
-	CreatedBy() string
+	// Returns a string representation of the command
+	String() string
 	// A list of files to snapshot, empty for metadata commands or nil if we don't know
 	FilesToSnapshot() []string
 	// Return true if this command should be true
-	// Only true for RUN/COPY/ADD
+	// Currently only true for RUN
 	CacheCommand() bool
 }
 

@@ -101,14 +101,15 @@ func (s *stageBuilder) CacheKey(cmd string) (string, error) {
 }
 
 func (s *stageBuilder) extractCachedLayer(image v1.Image, createdBy string) error {
-	logrus.Infof("Found cached layer, extracting to fs")
-	if err := util.GetFSFromImage(constants.RootDir, image); err != nil {
+	logrus.Infof("Found cached layer, extracting to filesystem")
+	extractedFiles, err := util.GetFSFromImage(constants.RootDir, image)
+	if err != nil {
 		return errors.Wrap(err, "extracting fs from image")
 	}
-	if _, err := s.Snapshotter.TakeSnapshot(nil); err != nil {
+	if _, err := s.Snapshotter.TakeSnapshot(extractedFiles); err != nil {
 		return err
 	}
-	logrus.Infof("Appending cached layer to base image and updating config file")
+	logrus.Infof("Appending cached layer to base image")
 	layers, err := image.Layers()
 	if err != nil {
 		return errors.Wrap(err, "getting cached layer from image")
@@ -127,7 +128,7 @@ func (s *stageBuilder) extractCachedLayer(image v1.Image, createdBy string) erro
 
 func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 	// Unpack file system to root
-	if err := util.GetFSFromImage(constants.RootDir, s.Image); err != nil {
+	if _, err := util.GetFSFromImage(constants.RootDir, s.Image); err != nil {
 		return err
 	}
 	// Take initial snapshot
@@ -144,18 +145,20 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 		if dockerCommand == nil {
 			continue
 		}
-		cacheKey, err := s.CacheKey(dockerCommand.CreatedBy())
+		logrus.Info(dockerCommand.String())
+		cacheKey, err := s.CacheKey(dockerCommand.String())
 		if err != nil {
 			return err
 		}
 		if dockerCommand.CacheCommand() && opts.UseCache {
 			image, err := cache.CheckCacheForLayer(opts, cacheKey)
 			if err == nil {
-				if err := s.extractCachedLayer(image, dockerCommand.CreatedBy()); err != nil {
+				if err := s.extractCachedLayer(image, dockerCommand.String()); err != nil {
 					return err
 				}
 				continue
 			}
+			logrus.Infof("No cached layer found, executing command...")
 		}
 
 		if err := dockerCommand.ExecuteCommand(&s.ConfigFile.Config, buildArgs); err != nil {
@@ -209,7 +212,7 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 		}
 		// Push layer to cache now along with new config file
 		if dockerCommand.CacheCommand() && opts.UseCache {
-			if err := PushLayerToCache(opts, cacheKey, layer, dockerCommand.CreatedBy()); err != nil {
+			if err := PushLayerToCache(opts, cacheKey, layer, dockerCommand.String()); err != nil {
 				return err
 			}
 		}
@@ -218,7 +221,7 @@ func (s *stageBuilder) buildStage(opts *config.KanikoOptions) error {
 				Layer: layer,
 				History: v1.History{
 					Author:    constants.Author,
-					CreatedBy: dockerCommand.CreatedBy(),
+					CreatedBy: dockerCommand.String(),
 				},
 			},
 		)
@@ -278,7 +281,8 @@ func extractImageToDependecyDir(index int, image v1.Image) error {
 		return err
 	}
 	logrus.Infof("trying to extract to %s", dependencyDir)
-	return util.GetFSFromImage(dependencyDir, image)
+	_, err := util.GetFSFromImage(dependencyDir, image)
+	return err
 }
 
 func saveStageAsTarball(stageIndex int, image v1.Image) error {

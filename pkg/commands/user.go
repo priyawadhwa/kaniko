@@ -63,9 +63,8 @@ func (r *UserCommand) FilesToSnapshot() []string {
 	return []string{}
 }
 
-func (r *UserCommand) CreatedBy() string {
-	s := []string{r.cmd.Name(), r.cmd.User}
-	return strings.Join(s, " ")
+func (r *UserCommand) String() string {
+	return r.cmd.String()
 }
 
 // CacheCommand returns false since this command shouldn't be cached

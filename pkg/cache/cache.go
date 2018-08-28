@@ -29,9 +29,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// CheckCacheForLayer checks the specified cache for a layer with the tag :cacheKey
+// If no cache is specified, one is inferred from the destination provided
 func CheckCacheForLayer(opts *config.KanikoOptions, cacheKey string) (v1.Image, error) {
 	cache := opts.Cache
-	logrus.Infof("####################################### Cache is %s", cache)
 	if cache == "" {
 		destination := opts.Destinations[0]
 		destRef, err := name.NewTag(destination, name.WeakValidation)
@@ -41,7 +42,7 @@ func CheckCacheForLayer(opts *config.KanikoOptions, cacheKey string) (v1.Image, 
 		cache = fmt.Sprintf("%s/cache", destRef.Context())
 	}
 	cache = fmt.Sprintf("%s:%s", cache, cacheKey)
-	logrus.Infof("checking %s for cached layer", cache)
+	logrus.Infof("Checking for cached layer %s...", cache)
 
 	cacheRef, err := name.NewTag(cache, name.WeakValidation)
 	if err != nil {

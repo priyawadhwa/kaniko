@@ -24,14 +24,13 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/kaniko/pkg/util"
-	"github.com/sirupsen/logrus"
 )
 
 type LayeredMap struct {
-	layers        []map[string]string
-	modifiedFiles []map[string]string
-	whiteouts     []map[string]string
-	hasher        func(string) (string, error)
+	layers     []map[string]string
+	addedFiles []map[string]string
+	whiteouts  []map[string]string
+	hasher     func(string) (string, error)
 }
 
 func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
@@ -46,14 +45,14 @@ func NewLayeredMap(h func(string) (string, error)) *LayeredMap {
 func (l *LayeredMap) Key() (string, error) {
 	c := bytes.NewBuffer([]byte{})
 	enc := json.NewEncoder(c)
-	enc.Encode(l.modifiedFiles)
+	enc.Encode(l.addedFiles)
 	return util.SHA256(c)
 }
 
 func (l *LayeredMap) Snapshot() {
 	l.whiteouts = append(l.whiteouts, map[string]string{})
 	l.layers = append(l.layers, map[string]string{})
-	l.modifiedFiles = append(l.modifiedFiles, map[string]string{})
+	l.addedFiles = append(l.addedFiles, map[string]string{})
 }
 
 func (l *LayeredMap) GetFlattenedPathsForWhiteOut() map[string]struct{} {
@@ -105,12 +104,12 @@ func (l *LayeredMap) Add(s string) error {
 		return fmt.Errorf("Error creating hash for %s: %s", s, err)
 	}
 	l.layers[len(l.layers)-1][s] = newV
-	logrus.Infof("adding %s to modified files", s)
+
 	m, err := util.IgnoreMtimeHasher()(s)
 	if err != nil {
 		return err
 	}
-	l.modifiedFiles[len(l.modifiedFiles)-1][s] = m
+	l.addedFiles[len(l.addedFiles)-1][s] = m
 	return nil
 }
 

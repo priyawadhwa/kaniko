@@ -62,9 +62,9 @@ func (w *WorkdirCommand) FilesToSnapshot() []string {
 	return w.snapshotFiles
 }
 
-// CreatedBy returns some information about the command for the image config history
-func (w *WorkdirCommand) CreatedBy() string {
-	return w.cmd.Name() + " " + w.cmd.Path
+// String returns some information about the command for the image config history
+func (w *WorkdirCommand) String() string {
+	return w.cmd.String()
 }
 
 // CacheCommand returns false since this command shouldn't be cached

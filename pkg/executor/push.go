@@ -45,8 +45,9 @@ func (w *withUserAgent) RoundTrip(r *http.Request) (*http.Response, error) {
 	return w.t.RoundTrip(r)
 }
 
+// PushLayerToCache pushes layer (tagged with cacheKey) to opts.Cache
+// if opts.Cache doesn't exist, infer the cache from the given destination
 func PushLayerToCache(opts *config.KanikoOptions, cacheKey string, layer v1.Layer, createdBy string) error {
-	logrus.Infof("Trying to push layer to cache now")
 	cache := opts.Cache
 	if cache == "" {
 		destination := opts.Destinations[0]
@@ -57,8 +58,7 @@ func PushLayerToCache(opts *config.KanikoOptions, cacheKey string, layer v1.Laye
 		cache = fmt.Sprintf("%s/cache", destRef.Context())
 	}
 	cache = fmt.Sprintf("%s:%s", cache, cacheKey)
-
-	logrus.Infof("pushing layer %s to cache", cache)
+	logrus.Infof("Pushing layer %s to cache now", cache)
 	empty := empty.Image
 	empty, err := mutate.Append(empty,
 		mutate.Addendum{
