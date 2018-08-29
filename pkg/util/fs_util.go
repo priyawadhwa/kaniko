@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/kaniko/pkg/constants"
 	"github.com/sirupsen/logrus"
@@ -64,6 +65,7 @@ func GetFSFromImage(root string, img v1.Image) error {
 			return err
 		}
 		tr := tar.NewReader(r)
+		symlinks := []*tar.Header{}
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -107,11 +109,18 @@ func GetFSFromImage(root string, img v1.Image) error {
 					logrus.Debugf("skipping symlink from %s to %s because %s is whitelisted", hdr.Linkname, path, hdr.Linkname)
 					continue
 				}
+				symlinks = append(symlinks, hdr)
+				continue
 			}
 			fs[path] = struct{}{}
 
 			if err := extractFile(root, hdr, tr); err != nil {
 				return err
+			}
+		}
+		for _, s := range symlinks {
+			if err := extractFile(root, s, nil); err != nil {
+				return errors.Wrapf(err, "extracting symlink %s", s.Name)
 			}
 		}
 	}
@@ -238,6 +247,13 @@ func extractFile(dest string, hdr *tar.Header, tr io.Reader) error {
 		dir := filepath.Dir(path)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
+		}
+		// Check if the symlink already exists but is pointing elsewhere
+		// If so, delete it
+		if _, readErr := os.Readlink(hdr.Name); readErr == nil {
+			if err := os.Remove(hdr.Name); err != nil {
+				return errors.Wrapf(err, "error removing %s to make way for new symlink", hdr.Name)
+			}
 		}
 		if err := os.Symlink(hdr.Linkname, path); err != nil {
 			return err
