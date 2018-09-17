@@ -17,10 +17,10 @@ limitations under the License.
 package commands
 
 import (
+	"github.com/GoogleContainerTools/kaniko/pkg/constants"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
-
-	"github.com/GoogleContainerTools/kaniko/pkg/constants"
 
 	"github.com/GoogleContainerTools/kaniko/pkg/dockerfile"
 	"github.com/GoogleContainerTools/kaniko/pkg/util"
