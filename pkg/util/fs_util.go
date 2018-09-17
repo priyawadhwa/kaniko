@@ -439,6 +439,9 @@ func CopyDir(src, dest string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+		if file == "." {
+			file = filepath.Base(fullPath)
+		}
 		destPath := filepath.Join(dest, file)
 		if fi.IsDir() {
 			logrus.Infof("Creating directory %s", destPath)

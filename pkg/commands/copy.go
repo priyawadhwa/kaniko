@@ -18,7 +18,6 @@ package commands
 
 import (
 	"github.com/GoogleContainerTools/kaniko/pkg/constants"
-	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 
@@ -71,7 +70,7 @@ func (c *CopyCommand) ExecuteCommand(config *v1.Config, buildArgs *dockerfile.Bu
 				// we need to add '/' to the end to indicate the destination is a directory
 				dest = filepath.Join(cwd, dest) + "/"
 			}
-			copiedFiles, err := util.CopyDir(fullPath, dest)
+			copiedFiles, err := util.CopyDir(fullPath, destPath)
 			if err != nil {
 				return err
 			}
