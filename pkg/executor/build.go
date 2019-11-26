@@ -54,15 +54,16 @@ const emptyTarSize = 1024
 
 // stageBuilder contains all fields necessary to build one stage of a Dockerfile
 type stageBuilder struct {
-	stage           config.KanikoStage
-	image           v1.Image
-	cf              *v1.ConfigFile
-	snapshotter     *snapshot.Snapshotter
-	baseImageDigest string
-	opts            *config.KanikoOptions
-	cmds            []commands.DockerCommand
-	args            *dockerfile.BuildArgs
-	crossStageDeps  map[int][]string
+	stage                       config.KanikoStage
+	image                       v1.Image
+	cf                          *v1.ConfigFile
+	snapshotter                 *snapshot.Snapshotter
+	reproducibleBaseImageDigest string
+	baseImageDigest             string
+	opts                        *config.KanikoOptions
+	cmds                        []commands.DockerCommand
+	args                        *dockerfile.BuildArgs
+	crossStageDeps              map[int][]string
 }
 
 // newStageBuilder returns a new type stageBuilder which contains all the information required to build the stage
@@ -92,14 +93,23 @@ func newStageBuilder(opts *config.KanikoOptions, stage config.KanikoStage, cross
 	if err != nil {
 		return nil, err
 	}
+	repro, err := mutate.Canonical(sourceImage)
+	if err != nil {
+		logrus.Warnf("error mutating base image, caching may not work as expected: %v", err)
+	}
+	reproDigest, err := repro.Digest()
+	if err != nil {
+		logrus.Warnf("error getting reproducible digest for base image, caching may not work as expected: %v", err)
+	}
 	s := &stageBuilder{
-		stage:           stage,
-		image:           sourceImage,
-		cf:              imageConfig,
-		snapshotter:     snapshotter,
-		baseImageDigest: digest.String(),
-		opts:            opts,
-		crossStageDeps:  crossStageDeps,
+		stage:                       stage,
+		image:                       sourceImage,
+		cf:                          imageConfig,
+		snapshotter:                 snapshotter,
+		baseImageDigest:             digest.String(),
+		reproducibleBaseImageDigest: reproDigest.String(),
+		opts:                        opts,
+		crossStageDeps:              crossStageDeps,
 	}
 
 	for _, cmd := range s.stage.Commands {
@@ -190,7 +200,7 @@ func (s *stageBuilder) optimize(compositeKey CompositeCache, cfg v1.Config) erro
 
 func (s *stageBuilder) build() error {
 	// Set the initial cache key to be the base image digest, the build args and the SrcContext.
-	compositeKey := NewCompositeCache(s.baseImageDigest)
+	compositeKey := NewCompositeCache(s.reproducibleBaseImageDigest)
 	compositeKey.AddKey(s.opts.BuildArgs...)
 
 	// Apply optimizations to the instructions.

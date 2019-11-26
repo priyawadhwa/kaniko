@@ -18,6 +18,7 @@ package executor
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,7 @@ import (
 
 // NewCompositeCache returns an initialized composite cache object.
 func NewCompositeCache(initial ...string) *CompositeCache {
+	fmt.Println("adding to composite cache:", initial)
 	c := CompositeCache{
 		keys: initial,
 	}
