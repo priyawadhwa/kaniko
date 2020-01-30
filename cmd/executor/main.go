@@ -18,11 +18,19 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/GoogleContainerTools/kaniko/cmd/executor/cmd"
+	"github.com/GoogleContainerTools/kaniko/pkg/slowjam/pkg/stacklog"
 )
 
 func main() {
+	s, err := stacklog.Start(stacklog.Config{Path: "stack.log", Poll: 50 * time.Millisecond})
+	if err != nil {
+		panic("unable to log stacks")
+	}
+	defer s.Stop()
+
 	if err := cmd.RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

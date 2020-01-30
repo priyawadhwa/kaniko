@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/browser"
 	"golang.org/x/image/colornames"
 
-	"k8s.io/minikube/pkg/slowjam/pkg/stackparse"
+	"github.com/GoogleContainerTools/kaniko/pkg/slowjam/pkg/stackparse"
 )
 
 var (

@@ -8,8 +8,8 @@ import (
 	"runtime/trace"
 	"time"
 
+	"github.com/GoogleContainerTools/kaniko/pkg/slowjam/pkg/stacklog"
 	"github.com/pkg/profile"
-	"k8s.io/minikube/pkg/slowjam/pkg/stacklog"
 	"golang.org/x/sync/errgroup"
 )
 
