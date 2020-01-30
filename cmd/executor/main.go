@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	s, err := stacklog.Start(stacklog.Config{Path: "stack.log", Poll: 50 * time.Millisecond})
+	s, err := stacklog.Start(stacklog.Config{Path: "/workspace/stack.log", Poll: 50 * time.Millisecond})
 	if err != nil {
 		panic("unable to log stacks")
 	}
