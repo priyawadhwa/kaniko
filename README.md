@@ -1,10 +1,11 @@
-To run slowjam:
+# To run slowjam:
 
+```
 make images # To build gcr.io/kaniko-project/executor:slowjam
 export PROJECT_ID=priya-wadhwa # Replace
 cd slowjam-test
 ./slowjam.sh Dockerfile $(pwd) gcr.io/$PROJECT_ID/slowjam:test
-
+```
 
 
 # kaniko - Build Images In Kubernetes
