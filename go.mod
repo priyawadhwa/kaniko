@@ -23,7 +23,6 @@ require (
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/genuinetools/amicontained v0.4.3
 	github.com/gliderlabs/ssh v0.2.2 // indirect
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/mock v1.3.1
 	github.com/google/go-cmp v0.3.0
 	github.com/google/go-containerregistry v0.0.0-20191218175032-34fb8ff33bed
@@ -37,7 +36,6 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/karrick/godirwalk v1.7.7
 	github.com/kevinburke/ssh_config v0.0.0-20180830205328-81db2a75821e // indirect
-	github.com/maruel/panicparse v1.3.0
 	github.com/mattn/go-ieproxy v0.0.0-20190805055040-f9202b1cfdeb // indirect
 	github.com/mattn/go-shellwords v1.0.3 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -48,9 +46,7 @@ require (
 	github.com/opentracing/opentracing-go v1.0.2 // indirect
 	github.com/otiai10/copy v1.0.2
 	github.com/pelletier/go-buffruneio v0.2.0 // indirect
-	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.8.1
-	github.com/pkg/profile v1.2.1
 	github.com/prometheus/client_golang v0.9.0-pre1.0.20180210140205-a40133b69fbd // indirect
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
 	github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1 // indirect
@@ -64,7 +60,6 @@ require (
 	github.com/vbatts/tar-split v0.10.2 // indirect
 	github.com/xanzy/ssh-agent v0.2.0 // indirect
 	go.opencensus.io v0.14.0 // indirect
-	golang.org/x/image v0.0.0-20190227222117-0694c2d4d067
 	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
