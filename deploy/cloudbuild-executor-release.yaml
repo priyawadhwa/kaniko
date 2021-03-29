@@ -16,10 +16,10 @@ steps:
          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:latest", "--push", "."]
 
 # Then executor:slim image
-- name: "gcr.io/cloud-builders/docker"
-  args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile_slim",
-         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME-slim",
-         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:slim", "--push", "."]
+# - name: "gcr.io/cloud-builders/docker"
+#   args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile_slim",
+#          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME-slim",
+#          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:slim", "--push", "."]
 
 # Sign the images
 - name: $_COSIGN_IMAGE
