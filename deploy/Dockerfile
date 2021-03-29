@@ -27,17 +27,19 @@ ARG TARGETPLATFORM
 RUN [ ! "x" = "x$TARGETPLATFORM" ] && `echo $TARGETPLATFORM |  awk '{split($0,a,"/"); print a[2]}' > /goarch` || echo "$GOARCH"
 
 # Get GCR credential helper
-RUN GOARCH=$(cat /goarch) && CGO_ENABLED=0 && \
-  (mkdir -p /go/src/github.com/GoogleCloudPlatform || true)                  && \
-  cd /go/src/github.com/GoogleCloudPlatform                                  && \
-  git clone https://github.com/GoogleCloudPlatform/docker-credential-gcr.git 
+# RUN GOARCH=$(cat /goarch) && CGO_ENABLED=0 && \
+#   (mkdir -p /go/src/github.com/GoogleCloudPlatform || true)                  && \
+#   cd /go/src/github.com/GoogleCloudPlatform                                  && \
+#   git clone https://github.com/GoogleCloudPlatform/docker-credential-gcr.git 
 
-WORKDIR /go/src/github.com/GoogleCloudPlatform/docker-credential-gcr
-RUN   make deps OUT_DIR=/usr/local/bin                                        
-RUN   go build -ldflags "-linkmode external -extldflags -static" -i -o /usr/local/bin/docker-credential-gcr main.go
+# WORKDIR /go/src/github.com/GoogleCloudPlatform/docker-credential-gcr
+# RUN   make deps OUT_DIR=/usr/local/bin                                        
+# RUN   go build -ldflags "-linkmode external -extldflags -static" -i -o /usr/local/bin/docker-credential-gcr main.go
 
 
-WORKDIR /go/src/github.com/GoogleContainerTools/kaniko
+# WORKDIR /go/src/github.com/GoogleContainerTools/kaniko
+
+RUN go get -u github.com/GoogleCloudPlatform/docker-credential-gcr
 
 
 # Get Amazon ECR credential helper
