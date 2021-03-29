@@ -58,7 +58,7 @@ RUN curl -Lo /usr/local/bin/docker-credential-gcr https://github.com/GoogleCloud
 RUN mkdir -p /kaniko/.docker
 
 COPY . .
-RUN make GOARCH=$(cat /goarch.txt)
+RUN make GOARCH=$(cat /goarch)
 
 # Generate latest ca-certificates
 
