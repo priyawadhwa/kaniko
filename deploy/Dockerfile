@@ -43,16 +43,16 @@ RUN curl -Lo /usr/local/bin/docker-credential-gcr https://github.com/GoogleCloud
     chmod +x /usr/local/bin/docker-credential-gcr
 
 
-# Get Amazon ECR credential helper
-RUN GOARCH=$(cat /goarch) && go get -u github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cli/docker-credential-ecr-login && \
-  make -C /go/src/github.com/awslabs/amazon-ecr-credential-helper
+# # Get Amazon ECR credential helper
+# RUN GOARCH=$(cat /goarch) && go get -u github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cli/docker-credential-ecr-login && \
+#   make -C /go/src/github.com/awslabs/amazon-ecr-credential-helper
 
-# ACR docker env credential helper
-RUN GOARCH=$(cat /goarch) && (mkdir -p /go/src/github.com/chrismellard || true)   && \
-  cd /go/src/github.com/chrismellard                                              && \
-  git clone https://github.com/chrismellard/docker-credential-acr-env             && \
-  cd  docker-credential-acr-env                                                   && \
-  make build
+# # ACR docker env credential helper
+# RUN GOARCH=$(cat /goarch) && (mkdir -p /go/src/github.com/chrismellard || true)   && \
+#   cd /go/src/github.com/chrismellard                                              && \
+#   git clone https://github.com/chrismellard/docker-credential-acr-env             && \
+#   cd  docker-credential-acr-env                                                   && \
+#   make build
 
 # Add .docker config dir
 RUN mkdir -p /kaniko/.docker
