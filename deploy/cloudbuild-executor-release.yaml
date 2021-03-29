@@ -38,6 +38,6 @@ options:
 
 substitutions:
   _EXECUTOR_IMAGE_NAME: executor
-  _DOCKER_BUILDX_PLATFORMS: 'linux/amd64'
+  _DOCKER_BUILDX_PLATFORMS: 'linux/amd64,linux/arm64'
   _KMS: gcpkms://projects/priya-wadhwa/locations/global/keyRings/cosign/cryptoKeys/cosign
   _COSIGN_IMAGE: gcr.io/projectsigstore/cosign/ci/cosign@sha256:26959da00d822c407800451beeb706f4a7bc372bd2cd1145e0ed2d02e5999f1e
