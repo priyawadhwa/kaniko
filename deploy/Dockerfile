@@ -39,7 +39,8 @@ RUN [ ! "x" = "x$TARGETPLATFORM" ] && `echo $TARGETPLATFORM |  awk '{split($0,a,
 
 # WORKDIR /go/src/github.com/GoogleContainerTools/kaniko
 
-RUN go get -u github.com/GoogleCloudPlatform/docker-credential-gcr
+RUN curl -Lo /usr/local/bin/docker-credential-gcr https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.0.4/docker-credential-gcr_linux_$GOARCH-2.0.4.tar.gz && \
+    chmod +x /usr/local/bin/docker-credential-gcr
 
 
 # Get Amazon ECR credential helper
