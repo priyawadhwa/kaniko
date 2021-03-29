@@ -9,17 +9,19 @@ steps:
   args: ['buildx', 'create', '--use', '--platform', '${_DOCKER_BUILDX_PLATFORMS}']
   id: 'create-builder'
 
-# Then executor:slim image
-- name: "gcr.io/cloud-builders/docker"
-  args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile_slim",
-         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME-slim",
-         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:slim", "--push", "."]
 
 # First, build kaniko
 - name: "gcr.io/cloud-builders/docker"
   args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile",
          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME",
          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:latest", "--push", "."]
+
+# Then executor:slim image
+- name: "gcr.io/cloud-builders/docker"
+  args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile_slim",
+         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME-slim",
+         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:slim", "--push", "."]
+
 
 
 
