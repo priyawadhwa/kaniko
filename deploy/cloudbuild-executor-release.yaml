@@ -23,6 +23,8 @@ steps:
 
 # Sign the images
 - name: $_COSIGN_IMAGE
+  args: ['generate-key-pair', '-kms', '$_KMS']
+- name: $_COSIGN_IMAGE
   args: ['sign', '-kms', '$_KMS', 'gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME']
 - name: $_COSIGN_IMAGE
   args: ['sign', '-kms', '$_KMS', 'gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:latest']
