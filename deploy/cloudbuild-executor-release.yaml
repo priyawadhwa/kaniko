@@ -2,18 +2,18 @@ timeout: 1800s
 
 steps:
 # Set up builder for muti-arch builds.
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['run', '--privileged', 'linuxkit/binfmt:v0.7']
-  id: 'initialize-qemu'
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['buildx', 'create', '--use', '--platform', '${_DOCKER_BUILDX_PLATFORMS}']
-  id: 'create-builder'
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['run', '--privileged', 'linuxkit/binfmt:v0.7']
+#   id: 'initialize-qemu'
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['buildx', 'create', '--use', '--platform', '${_DOCKER_BUILDX_PLATFORMS}']
+#   id: 'create-builder'
 
-# First, build kaniko
-- name: "gcr.io/cloud-builders/docker"
-  args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile",
-         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME",
-         "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:latest", "--push", "."]
+# # First, build kaniko
+# - name: "gcr.io/cloud-builders/docker"
+#   args: ['buildx', 'build', '--platform', '$_DOCKER_BUILDX_PLATFORMS', "-f", "deploy/Dockerfile",
+#          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME",
+#          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:latest", "--push", "."]
 
 # Then executor:slim image
 # - name: "gcr.io/cloud-builders/docker"
@@ -38,5 +38,5 @@ options:
 substitutions:
   _EXECUTOR_IMAGE_NAME: executor
   _DOCKER_BUILDX_PLATFORMS: 'linux/amd64'
-  _KMS: gcpkms://projects/$PROJECT_ID/locations/global/keyRings/cosign/cryptoKeys/cosign
+  _KMS: gcpkms://projects/priya-wadhwa/locations/global/keyRings/cosign/cryptoKeys/cosign
   _COSIGN_IMAGE: gcr.io/projectsigstore/cosign/ci/cosign@sha256:b9e72eb217dd93d2144b8143d8c9812e62b32903e790b325116641e89df03e5f
