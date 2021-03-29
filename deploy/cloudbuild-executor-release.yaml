@@ -22,13 +22,13 @@ steps:
          "-t", "gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:slim", "--push", "."]
 
 # Sign the images
-- name: "gcr.io/projectsigstore/cosign/ci/cosign@sha256:26959da00d822c407800451beeb706f4a7bc372bd2cd1145e0ed2d02e5999f1e"
+- name: $_COSIGN_IMAGE
   args: ['sign', '-kms', '$_KMS', 'gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME']
-- name: "gcr.io/projectsigstore/cosign/ci/cosign@sha256:26959da00d822c407800451beeb706f4a7bc372bd2cd1145e0ed2d02e5999f1e"
+- name: $_COSIGN_IMAGE
   args: ['sign', '-kms', '$_KMS', 'gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:latest']
-- name: "gcr.io/projectsigstore/cosign/ci/cosign@sha256:26959da00d822c407800451beeb706f4a7bc372bd2cd1145e0ed2d02e5999f1e"
+- name: $_COSIGN_IMAGE
   args: ['sign', '-kms', '$_KMS', 'gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:$TAG_NAME-slim']
-- name: "gcr.io/projectsigstore/cosign/ci/cosign@sha256:26959da00d822c407800451beeb706f4a7bc372bd2cd1145e0ed2d02e5999f1e"
+- name: $_COSIGN_IMAGE
   args: ['sign', '-kms', '$_KMS', 'gcr.io/$PROJECT_ID/${_EXECUTOR_IMAGE_NAME}:slim']
 
 options:
@@ -38,4 +38,5 @@ options:
 substitutions:
   _EXECUTOR_IMAGE_NAME: executor
   _DOCKER_BUILDX_PLATFORMS: 'linux/amd64'
-  _KMS: projects/$PROJECT_ID/locations/global/keyRings/cosign/cryptoKeys/cosign
+  _KMS: gcpkms://projects/$PROJECT_ID/locations/global/keyRings/cosign/cryptoKeys/cosign
+  _COSIGN_IMAGE: gcr.io/projectsigstore/cosign/ci/cosign@sha256:b9e72eb217dd93d2144b8143d8c9812e62b32903e790b325116641e89df03e5f
