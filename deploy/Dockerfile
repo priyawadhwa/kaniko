@@ -14,7 +14,7 @@
 
 # Builds the static Go image to execute in a Kubernetes job
 
-FROM golang:1.15
+FROM golang:1.14
 ARG GOARCH=amd64
 WORKDIR /go/src/github.com/GoogleContainerTools/kaniko
 
@@ -33,7 +33,7 @@ RUN GOARCH=$(cat /goarch) && CGO_ENABLED=0 && \
   git clone https://github.com/GoogleCloudPlatform/docker-credential-gcr.git && \
   cd /go/src/github.com/GoogleCloudPlatform/docker-credential-gcr            && \
   make deps OUT_DIR=/usr/local/bin                                           && \
-  go build -ldflags "-linkmode external -extldflags -static" -i -o /usr/local/bin/docker-credential-gcr main.go
+  go build -ldflags "-linkmode external -extldflags -static" -i -o /usr/local/bin/docker-credential-gcr main.go  
 
 # Get Amazon ECR credential helper
 RUN GOARCH=$(cat /goarch) && go get -u github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cli/docker-credential-ecr-login && \
@@ -44,29 +44,20 @@ RUN GOARCH=$(cat /goarch) && (mkdir -p /go/src/github.com/chrismellard || true) 
   cd /go/src/github.com/chrismellard                                              && \
   git clone https://github.com/chrismellard/docker-credential-acr-env             && \
   cd  docker-credential-acr-env                                                   && \
-  make build
+  make build && cp -f ./build/docker-credential-acr-env /usr/local/bin
 
 # Add .docker config dir
 RUN mkdir -p /kaniko/.docker
 
 COPY . .
-RUN make GOARCH=$(cat /goarch.txt)
-
-# Generate latest ca-certificates
-
-FROM debian:buster-slim AS certs
-
-RUN \
-  apt update && \
-  apt install -y ca-certificates && \
-  cat /etc/ssl/certs/* > /ca-certificates.crt
+RUN make GOARCH=$(cat /goarch.txt) 
 
 FROM scratch
 COPY --from=0 /go/src/github.com/GoogleContainerTools/kaniko/out/executor /kaniko/executor
 COPY --from=0 /usr/local/bin/docker-credential-gcr /kaniko/docker-credential-gcr
 COPY --from=0 /go/src/github.com/awslabs/amazon-ecr-credential-helper/bin/local/docker-credential-ecr-login /kaniko/docker-credential-ecr-login
-COPY --from=0 /go/src/github.com/chrismellard/docker-credential-acr-env/build/docker-credential-acr-env /kaniko/docker-credential-acr
-COPY --from=certs /ca-certificates.crt /kaniko/ssl/certs/
+COPY --from=0 /usr/local/bin/docker-credential-acr-linux /kaniko/docker-credential-acr
+COPY files/ca-certificates.crt /kaniko/ssl/certs/
 COPY --from=0 /kaniko/.docker /kaniko/.docker
 COPY files/nsswitch.conf /etc/nsswitch.conf
 ENV HOME /root
