@@ -27,7 +27,7 @@ RUN echo "I am runninng $TARGETPLATFORM with $(cat /goarch)"
 WORKDIR /go/src/github.com/GoogleContainerTools/kaniko
 COPY . .
 
-RUN make GOARCH=$(cat /goarch)
+RUN GOARCH=$(cat /goarch) make 
 
 # Generate latest ca-certificates
 
