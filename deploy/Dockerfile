@@ -14,7 +14,7 @@
 
 # Builds the static Go image to execute in a Kubernetes job
 
-FROM golang:1.15
+FROM golang:1.16
 ARG GOARCH=amd64
 WORKDIR /go/src/github.com/GoogleContainerTools/kaniko
 
@@ -58,7 +58,7 @@ RUN curl -Lo /usr/local/bin/docker-credential-gcr https://github.com/GoogleCloud
 RUN mkdir -p /kaniko/.docker
 
 COPY . .
-RUN make GOARCH=$(cat /goarch)
+RUN GOARCH=$(cat /goarch) make 
 
 # Generate latest ca-certificates
 
