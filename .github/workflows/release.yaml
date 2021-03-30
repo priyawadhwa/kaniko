@@ -52,27 +52,27 @@ jobs:
         # via gcloud command-line tool.
         gcloud auth configure-docker
 
-    - uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: ./deploy/Dockerfile_slim
-        platforms: linux/amd64,linux/arm64,linux/ppc64le
-        push: true
-        tags: |
-          gcr.io/kaniko-project/executor:${{ env.GITHUB_SHA }}-slim
-          gcr.io/kaniko-project/executor:${{ steps.vars.outputs.tag }}-slim
-          gcr.io/kaniko-project/executor:slim
+    # - uses: docker/build-push-action@v2
+    #   with:
+    #     context: .
+    #     file: ./deploy/Dockerfile_slim
+    #     platforms: linux/amd64,linux/arm64,linux/ppc64le
+    #     push: true
+    #     tags: |
+    #       gcr.io/kaniko-project/executor:${{ env.GITHUB_SHA }}-slim
+    #       gcr.io/kaniko-project/executor:${{ steps.vars.outputs.tag }}-slim
+    #       gcr.io/kaniko-project/executor:slim
 
-    - uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: ./deploy/Dockerfile
-        platforms: linux/amd64,linux/arm64,linux/ppc64le
-        push: true
-        tags: |
-          gcr.io/kaniko-project/executor:${{ env.GITHUB_SHA }}
-          gcr.io/kaniko-project/executor:${{ steps.vars.outputs.tag }}
-          gcr.io/kaniko-project/executor:latest
+    # - uses: docker/build-push-action@v2
+    #   with:
+    #     context: .
+    #     file: ./deploy/Dockerfile
+    #     platforms: linux/amd64,linux/arm64,linux/ppc64le
+    #     push: true
+    #     tags: |
+    #       gcr.io/kaniko-project/executor:${{ env.GITHUB_SHA }}
+    #       gcr.io/kaniko-project/executor:${{ steps.vars.outputs.tag }}
+    #       gcr.io/kaniko-project/executor:latest
     
     - name: Sign images 
       uses: sigstore/cosign-installer@main
@@ -136,16 +136,16 @@ jobs:
         # via gcloud command-line tool.
         gcloud auth configure-docker
 
-    - uses: docker/build-push-action@v2
-      with:
-        context: .
-        file:  ./deploy/Dockerfile_debug
-        platforms: linux/amd64,linux/arm64,linux/ppc64le
-        push: true
-        tags: |
-          gcr.io/kaniko-project/executor:${{ env.GITHUB_SHA }}-debug
-          gcr.io/kaniko-project/executor:${{ steps.vars.outputs.tag }}-debug
-          gcr.io/kaniko-project/executor:debug
+    # - uses: docker/build-push-action@v2
+    #   with:
+    #     context: .
+    #     file:  ./deploy/Dockerfile_debug
+    #     platforms: linux/amd64,linux/arm64,linux/ppc64le
+    #     push: true
+    #     tags: |
+    #       gcr.io/kaniko-project/executor:${{ env.GITHUB_SHA }}-debug
+    #       gcr.io/kaniko-project/executor:${{ steps.vars.outputs.tag }}-debug
+    #       gcr.io/kaniko-project/executor:debug
 
     - name: Sign images 
       uses: sigstore/cosign-installer@main
@@ -204,16 +204,16 @@ jobs:
         # Set up docker to authenticate
         # via gcloud command-line tool.
         gcloud auth configure-docker
-    - uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: ./deploy/Dockerfile_warmer
-        platforms: linux/amd64,linux/arm64,linux/ppc64le
-        push: true
-        tags: |
-          gcr.io/kaniko-project/warmer:${{ env.GITHUB_SHA }}
-          gcr.io/kaniko-project/warmer:${{ steps.vars.outputs.tag }}
-          gcr.io/kaniko-project/warmer:latest
+    # - uses: docker/build-push-action@v2
+    #   with:
+    #     context: .
+    #     file: ./deploy/Dockerfile_warmer
+    #     platforms: linux/amd64,linux/arm64,linux/ppc64le
+    #     push: true
+    #     tags: |
+    #       gcr.io/kaniko-project/warmer:${{ env.GITHUB_SHA }}
+    #       gcr.io/kaniko-project/warmer:${{ steps.vars.outputs.tag }}
+    #       gcr.io/kaniko-project/warmer:latest
 
     - name: Sign images 
       uses: sigstore/cosign-installer@main
