@@ -18,12 +18,15 @@ package creds
 
 import (
 	"context"
+	"os"
 	"sync"
 
 	"github.com/genuinetools/bpfd/proc"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/sirupsen/logrus"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -47,4 +50,42 @@ func GetKeychain() authn.Keychain {
 		}
 	})
 	return keyChain
+}
+
+func checkDockerConfigJson(keyChain authn.Keychain) (authn.Keychain, error) {
+	dockerConfigJSON := dockerConfigJsonLocation()
+	// check if the file exists
+	contents, err := ioutil.ReadFile(dockerConfigJSON)
+	if err != nil {
+		return nil, err
+	}
+	// if it does, parse it into a secret
+	var secret v1.Secret
+	if err := json.Unmarshal(contents, &secret); err != nil {
+		return nil, err
+	}
+
+	keyring, err := secrets.MakeDockerKeyring([]v1.Secret{secret}, keyChain)
+	if err != nil {
+		return nil, err
+	}
+	return keyring, nil
+}
+
+func dockerConfigJsonLocation() string {
+	configFile := ".dockerconfigjson"
+	if dockerConfig := os.Getenv("DOCKER_CONFIG"); dockerConfig != "" {
+		file, err := os.Stat(dockerConfig)
+		if err == nil {
+			if file.IsDir() {
+				return filepath.Join(dockerConfig, configFile)
+			}
+		} else {
+			if os.IsNotExist(err) {
+				return string(os.PathSeparator) + filepath.Join("kaniko", ".docker", configFile)
+			}
+		}
+		return filepath.Clean(dockerConfig)
+	}
+	return string(os.PathSeparator) + filepath.Join("kaniko", ".docker", configFile)
 }
